@@ -1,3 +1,14 @@
+mod cmd_add;
+mod cmd_config;
+mod cmd_explain;
+mod cmd_export;
+mod cmd_import;
+mod cmd_note;
+mod cmd_read;
+mod cmd_review;
+mod cmd_stats;
+mod cmd_sync;
+
 use clap::Parser;
 
 #[derive(Parser)]
@@ -11,16 +22,23 @@ struct Cli {
 enum Commands {
     Add {
         #[command(subcommand)]
-        target: AddTarget,
+        target: cmd_add::AddTarget,
     },
     Explain {
         #[command(subcommand)]
-        target: ExplainTarget,
+        target: cmd_explain::ExplainTarget,
     },
-    Review { #[arg(long)] all: bool },
+    Review {
+        #[arg(long)]
+        all: bool,
+    },
     Sync,
-    Read { file: String },
-    Import { path: String },
+    Read {
+        file: String,
+    },
+    Import {
+        path: String,
+    },
     Export {
         #[arg(long)]
         word: Option<String>,
@@ -32,11 +50,11 @@ enum Commands {
     Stats,
     Config {
         #[command(subcommand)]
-        action: ConfigAction,
+        action: cmd_config::ConfigAction,
     },
     Note {
         #[command(subcommand)]
-        action: NoteAction,
+        action: cmd_note::NoteAction,
     },
     #[command(alias = "-s")]
     Server {
@@ -45,38 +63,29 @@ enum Commands {
     },
 }
 
-#[derive(clap::Subcommand)]
-enum AddTarget {
-    Word { word: String },
-    Phrase { phrase: String },
-}
-
-#[derive(clap::Subcommand)]
-enum ExplainTarget {
-    Word { word: String },
-    Phrase { phrase: String },
-}
-
-#[derive(clap::Subcommand)]
-enum ConfigAction {
-    Init,
-    Set { key: String, value: String },
-    Get { key: String },
-}
-
-#[derive(clap::Subcommand)]
-enum NoteAction {
-    Add {
-        target_type: String,
-        target_id: i64,
-        content: Vec<String>,
-    },
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
-    let _cli = Cli::parse();
-    println!("engai: placeholder");
+    let cli = Cli::parse();
+
+    match cli.command {
+        Some(Commands::Add { target }) => cmd_add::run(target).await?,
+        Some(Commands::Explain { target }) => cmd_explain::run(target).await?,
+        Some(Commands::Review { all }) => cmd_review::run(all).await?,
+        Some(Commands::Sync) => cmd_sync::run().await?,
+        Some(Commands::Read { file }) => cmd_read::run(&file).await?,
+        Some(Commands::Import { path }) => cmd_import::run(&path).await?,
+        Some(Commands::Export { word, phrase, all }) => {
+            cmd_export::run(word, phrase, all).await?
+        }
+        Some(Commands::Stats) => cmd_stats::run().await?,
+        Some(Commands::Config { action }) => cmd_config::run(action).await?,
+        Some(Commands::Note { action }) => cmd_note::run(action).await?,
+        Some(Commands::Server { port }) => {
+            println!("Server mode on port {} (Phase 2)", port)
+        }
+        None => println!("Run `engai --help` for available commands"),
+    }
+
     Ok(())
 }
