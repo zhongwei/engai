@@ -274,15 +274,31 @@ PUT    /api/words/:word              # update
 DELETE /api/words/:word              # delete
 POST   /api/words/:word/explain      # AI explain (streaming SSE)
 
-# Review
-GET    /api/review/today             # today's review queue
-POST   /api/review/:word             # submit review result (quality 0-5)
+# Phrases
+GET    /api/phrases                  # list (pagination, search, filter by familiarity)
+GET    /api/phrases/:id              # detail
+POST   /api/phrases                  # create
+PUT    /api/phrases/:id              # update
+DELETE /api/phrases/:id              # delete
+POST   /api/phrases/:id/explain      # AI explain (streaming SSE)
+
+# Review (polymorphic: supports words and phrases)
+GET    /api/review/today             # today's review queue (words + phrases)
+POST   /api/review/:target_type/:id  # submit review result (target_type: "word"|"phrase", quality 0-5)
 GET    /api/review/stats             # review statistics
 
 # Reading
 GET    /api/readings                  # list reading materials
 POST   /api/readings                  # add reading material
+GET    /api/readings/:id              # detail
+DELETE /api/readings/:id              # delete
 POST   /api/readings/:id/analyze      # AI reading analysis (streaming SSE)
+
+# Notes (standalone, polymorphic)
+GET    /api/notes?target_type=&target_id=  # list notes for a target
+POST   /api/notes                          # create note (body: target_type, target_id, content)
+PUT    /api/notes/:id                      # update note
+DELETE /api/notes/:id                      # delete note
 
 # AI Chat
 WS     /api/chat                      # WebSocket English conversation
@@ -357,14 +373,17 @@ Left sidebar for navigation, main area for content, bottom bar for quick actions
 engai                              Start Web + TUI
 engai -s / --server                Web server only (port configurable via -p)
 engai add <word>                   Add word (Markdown + SQLite)
+engai add phrase <phrase>          Add phrase (Markdown + SQLite)
 engai explain <word>               AI explain word, write to Markdown
-engai review                       Today's review (interactive terminal)
+engai explain phrase <phrase>      AI explain phrase, write to Markdown
+engai review                       Today's review — words + phrases (interactive terminal)
 engai review --all                 View all pending reviews
 engai sync                         Bidirectional Markdown ↔ SQLite sync
 engai read <file>                  Import reading material + AI analysis
 engai import <dir-or-file>         Batch import Markdown notes
-engai export [--word <w>|--all]    Export to Markdown
+engai export [--word <w>|--phrase <p>|--all]  Export to Markdown
 engai stats                        Learning statistics summary
+engai note add <target_type> <target_id> <content>  Add note
 engai config set <key> <value>     Set config
 engai config get <key>             Get config
 engai config init                  Interactive config initialization
