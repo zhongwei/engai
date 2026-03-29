@@ -34,6 +34,12 @@ pub struct LearningConfig {
 pub struct StorageConfig {
     pub db_path: String,
     pub docs_path: String,
+    #[serde(default = "default_prompts_path")]
+    pub prompts_path: String,
+}
+
+fn default_prompts_path() -> String {
+    "./prompts".to_string()
 }
 
 impl Default for Config {
@@ -82,6 +88,7 @@ impl Default for StorageConfig {
         Self {
             db_path: "~/.engai/engai.db".to_string(),
             docs_path: "./docs".to_string(),
+            prompts_path: "./prompts".to_string(),
         }
     }
 }
@@ -103,6 +110,10 @@ impl Config {
 
     pub fn docs_path(&self) -> PathBuf {
         expand_tilde(&self.storage.docs_path)
+    }
+
+    pub fn prompts_path(&self) -> PathBuf {
+        expand_tilde(&self.storage.prompts_path)
     }
 
     pub fn load_global() -> anyhow::Result<Self> {
