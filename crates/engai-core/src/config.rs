@@ -42,6 +42,7 @@ fn default_prompts_path() -> String {
     "./prompts".to_string()
 }
 
+#[allow(clippy::derivable_impls)]
 impl Default for Config {
     fn default() -> Self {
         Self {
@@ -147,9 +148,9 @@ impl Config {
 }
 
 fn expand_tilde(path: &str) -> PathBuf {
-    if path.starts_with("~/") {
+    if let Some(rest) = path.strip_prefix("~/") {
         if let Some(home) = dirs::home_dir() {
-            return home.join(&path[2..]);
+            return home.join(rest);
         }
     }
     PathBuf::from(path)

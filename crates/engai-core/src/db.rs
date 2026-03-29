@@ -103,6 +103,7 @@ impl Db {
         Ok(result)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_word(
         &self,
         id: i64,
@@ -208,6 +209,7 @@ impl Db {
         Ok(result)
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn update_phrase(
         &self,
         id: i64,

@@ -9,6 +9,7 @@ use crate::prompt::PromptEngine;
 #[derive(Debug, Clone)]
 pub struct AiClient {
     client: Client,
+    #[allow(dead_code)]
     provider: String,
     api_key: String,
     model: String,

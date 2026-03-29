@@ -11,6 +11,7 @@ struct WordFrontmatter {
     familiarity: i32,
     interval: i32,
     next_review: Option<String>,
+    #[allow(dead_code)]
     synced_at: Option<String>,
 }
 
@@ -20,6 +21,7 @@ struct PhraseFrontmatter {
     familiarity: i32,
     interval: i32,
     next_review: Option<String>,
+    #[allow(dead_code)]
     synced_at: Option<String>,
 }
 
@@ -27,7 +29,9 @@ struct PhraseFrontmatter {
 struct ReadingFrontmatter {
     title: Option<String>,
     source: Option<String>,
+    #[allow(dead_code)]
     imported_at: Option<String>,
+    #[allow(dead_code)]
     synced_at: Option<String>,
 }
 
@@ -111,11 +115,7 @@ fn extract_list(body: &str, heading: &str) -> Vec<String> {
         .lines()
         .filter_map(|line| {
             let line = line.trim();
-            if line.starts_with("- ") {
-                Some(line[2..].to_string())
-            } else {
-                None
-            }
+            line.strip_prefix("- ").map(|rest| rest.to_string())
         })
         .collect()
 }
@@ -175,7 +175,7 @@ impl MarkdownWord {
         if let Some(ref m) = self.meaning {
             md.push_str("\n## Meaning\n");
             md.push_str(m);
-            md.push_str("\n");
+            md.push('\n');
         }
         if !self.examples.is_empty() {
             md.push_str("\n## Examples\n");
@@ -192,7 +192,7 @@ impl MarkdownWord {
         if let Some(ref ai) = self.ai_explanation {
             md.push_str("\n## AI Explanation\n");
             md.push_str(ai);
-            md.push_str("\n");
+            md.push('\n');
         }
         if !self.my_notes.is_empty() {
             md.push_str("\n## My Notes\n");
@@ -265,7 +265,7 @@ impl MarkdownPhrase {
         if let Some(ref m) = self.meaning {
             md.push_str("\n## Meaning\n");
             md.push_str(m);
-            md.push_str("\n");
+            md.push('\n');
         }
         if !self.examples.is_empty() {
             md.push_str("\n## Examples\n");
@@ -276,7 +276,7 @@ impl MarkdownPhrase {
         if let Some(ref ai) = self.ai_explanation {
             md.push_str("\n## AI Explanation\n");
             md.push_str(ai);
-            md.push_str("\n");
+            md.push('\n');
         }
         if !self.my_notes.is_empty() {
             md.push_str("\n## My Notes\n");
@@ -337,7 +337,7 @@ impl MarkdownReading {
         md.push_str(&format!("# {}\n", self.title));
         md.push_str("\n## Content\n");
         md.push_str(&self.content);
-        md.push_str("\n");
+        md.push('\n');
         if !self.vocabulary.is_empty() {
             md.push_str("\n## Vocabulary\n");
             for v in &self.vocabulary {
@@ -347,7 +347,7 @@ impl MarkdownReading {
         if let Some(ref s) = self.summary {
             md.push_str("\n## Summary (AI)\n");
             md.push_str(s);
-            md.push_str("\n");
+            md.push('\n');
         }
         if !self.my_notes.is_empty() {
             md.push_str("\n## My Notes\n");

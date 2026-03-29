@@ -17,7 +17,7 @@ pub async fn run(target: AddTarget) -> Result<()> {
     match target {
         AddTarget::Word { word } => {
             let w = db.get_word(&word).await?;
-            if let Some(_) = w {
+            if w.is_some() {
                 println!("Word '{}' already exists", word);
                 return Ok(());
             }
@@ -41,7 +41,7 @@ pub async fn run(target: AddTarget) -> Result<()> {
         }
         AddTarget::Phrase { phrase } => {
             let p = db.get_phrase(&phrase).await?;
-            if let Some(_) = p {
+            if p.is_some() {
                 println!("Phrase '{}' already exists", phrase);
                 return Ok(());
             }
