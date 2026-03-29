@@ -2336,8 +2336,8 @@ async fn test_sync_word_from_db_to_markdown() {
     let tmp = TempDir::new().unwrap();
     let docs_path = tmp.path().join("docs");
 
-    let db = Db::new_in_memory().await.unwrap();
-    let engine = SyncEngine::new(&db, &docs_path, &tmp.path().join("prompts"));
+    let db = std::sync::Arc::new(Db::new_in_memory().await.unwrap());
+    let engine = SyncEngine::new(db.clone(), &docs_path, &tmp.path().join("prompts"));
 
     db.add_word("abandon", None, Some("to leave behind"))
         .await
@@ -2381,8 +2381,8 @@ to obtain from a source
         .await
         .unwrap();
 
-    let db = Db::new_in_memory().await.unwrap();
-    let engine = SyncEngine::new(&db, &docs_path, &tmp.path().join("prompts"));
+    let db = std::sync::Arc::new(Db::new_in_memory().await.unwrap());
+    let engine = SyncEngine::new(db.clone(), &docs_path, &tmp.path().join("prompts"));
 
     engine.sync_all().await.unwrap();
 
@@ -2417,8 +2417,8 @@ to stop trying
         .await
         .unwrap();
 
-    let db = Db::new_in_memory().await.unwrap();
-    let engine = SyncEngine::new(&db, &docs_path, &tmp.path().join("prompts"));
+    let db = std::sync::Arc::new(Db::new_in_memory().await.unwrap());
+    let engine = SyncEngine::new(db.clone(), &docs_path, &tmp.path().join("prompts"));
 
     engine.sync_all().await.unwrap();
 
@@ -2444,12 +2444,12 @@ use crate::db::Db;
 use crate::markdown::{MarkdownPhrase, MarkdownWord};
 
 pub struct SyncEngine {
-    db: &'static Db,
+    db: std::sync::Arc<Db>,
     docs_path: PathBuf,
 }
 
 impl SyncEngine {
-    pub fn new(db: &'static Db, docs_path: &Path, _prompts_path: &Path) -> Self {
+    pub fn new(db: std::sync::Arc<Db>, docs_path: &Path, _prompts_path: &Path) -> Self {
         Self {
             db,
             docs_path: docs_path.to_path_buf(),
@@ -3272,11 +3272,12 @@ use anyhow::Result;
 use engai_core::config::Config;
 use engai_core::db::Db;
 use engai_core::sync::SyncEngine;
+use std::sync::Arc;
 
 pub async fn run() -> Result<()> {
     let config = Config::load_global().await?;
     let db_path = Config::db_path();
-    let db = Box::leak(Box::new(Db::new(&db_path).await?));
+    let db = Arc::new(Db::new(&db_path).await?);
     let docs_path = Config::docs_path();
     let prompts_path = std::path::PathBuf::from("prompts");
 
@@ -3288,8 +3289,6 @@ pub async fn run() -> Result<()> {
     Ok(())
 }
 ```
-
-> **Note:** `Box::leak` is used for the `'static` lifetime requirement of SyncEngine. In production this is fine for a CLI that runs once.
 
 - [ ] **Step 2: Implement cmd_read.rs**
 
