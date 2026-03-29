@@ -66,11 +66,8 @@ engai/
 │   └── 99_review/
 ├── prompts/                   # AI prompt templates
 │   ├── explain_word.md
-│   ├── sentence_rewrite.md
 │   ├── reading_analyze.md
-│   ├── chat_english.md
-│   ├── daily_topic.md
-│   └── writing_correct.md
+│   └── chat_english.md
 └── scripts/                   # automation scripts
 ```
 
@@ -126,7 +123,8 @@ CREATE TABLE examples (
 
 CREATE TABLE reviews (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    word_id     INTEGER REFERENCES words(id),
+    target_type TEXT NOT NULL,          -- "word" | "phrase"
+    target_id   INTEGER NOT NULL,
     quality     INTEGER,
     reviewed_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -406,11 +404,8 @@ Located in `prompts/`. Support variable interpolation: `{{word}}`, `{{level}}`, 
 | Template | Purpose |
 |----------|---------|
 | explain_word.md | Word explanation: meaning, 3 examples, synonyms comparison |
-| sentence_rewrite.md | Sentence rewriting exercise |
 | reading_analyze.md | Reading breakdown: vocabulary, grammar, summary |
 | chat_english.md | English conversation system prompt |
-| daily_topic.md | Daily topic generation |
-| writing_correct.md | Writing correction and feedback |
 
 ## Dependencies
 
