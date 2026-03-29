@@ -66,6 +66,7 @@ engai/
 │   └── 99_review/
 ├── prompts/                   # AI prompt templates
 │   ├── explain_word.md
+│   ├── explain_phrase.md
 │   ├── reading_analyze.md
 │   └── chat_english.md
 └── scripts/                   # automation scripts
@@ -423,6 +424,7 @@ Located in `prompts/`. Support variable interpolation: `{{word}}`, `{{level}}`, 
 | Template | Purpose |
 |----------|---------|
 | explain_word.md | Word explanation: meaning, 3 examples, synonyms comparison |
+| explain_phrase.md | Phrase explanation: meaning, usage contexts, 3 examples |
 | reading_analyze.md | Reading breakdown: vocabulary, grammar, summary |
 | chat_english.md | English conversation system prompt |
 
