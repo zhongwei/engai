@@ -63,8 +63,6 @@ engai/
 │   ├── 01_vocab/
 │   ├── 02_phrases/
 │   ├── 03_reading/
-│   ├── 04_speaking/
-│   ├── 05_writing/
 │   └── 99_review/
 ├── prompts/                   # AI prompt templates
 │   ├── explain_word.md
@@ -106,11 +104,24 @@ CREATE TABLE words (
     updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE phrases (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    phrase      TEXT UNIQUE NOT NULL,
+    meaning     TEXT,
+    familiarity INTEGER DEFAULT 0,
+    next_review DATETIME,
+    interval    INTEGER DEFAULT 0,
+    ease_factor REAL DEFAULT 2.5,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE examples (
-    id       INTEGER PRIMARY KEY AUTOINCREMENT,
-    word_id  INTEGER REFERENCES words(id) ON DELETE CASCADE,
-    sentence TEXT NOT NULL,
-    source   TEXT
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    target_type TEXT NOT NULL,          -- "word" | "phrase"
+    target_id   INTEGER NOT NULL,
+    sentence    TEXT NOT NULL,
+    source      TEXT
 );
 
 CREATE TABLE reviews (
@@ -130,8 +141,8 @@ CREATE TABLE readings (
 
 CREATE TABLE notes (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    target_type TEXT,
-    target_id   INTEGER,
+    target_type TEXT NOT NULL,          -- "word" | "phrase" | "reading"
+    target_id   INTEGER NOT NULL,
     content     TEXT,
     created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 );
@@ -150,7 +161,7 @@ Sync rules based on `updated_at` timestamps:
 
 1. **Markdown → SQLite**: Parse Markdown (frontmatter + structured sections). If file mtime > DB `updated_at`, update DB.
 2. **SQLite → Markdown**: If DB `updated_at` > file mtime, regenerate Markdown file.
-3. **Conflict**: Both modified → keep newer, backup older as `.bak`.
+3. **Conflict**: Both modified → keep newer, backup older as `<filename>.<timestamp>.bak`.
 
 Markdown files include YAML frontmatter for sync metadata:
 
@@ -185,6 +196,65 @@ I abandoned the project.
 - 2026-03-29 ⭐
 ```
 
+### Phrase Markdown Format
+
+```markdown
+---
+phrase: take off
+familiarity: 2
+interval: 3
+next_review: 2026-04-01
+synced_at: 2026-03-29T10:00:00
+---
+
+# take off
+
+## Meaning
+to remove; to become successful
+
+## Examples
+- She took off her coat.
+- The business really took off this year.
+
+## AI Explanation
+> ...
+
+## My Notes
+- Two very different meanings depending on context
+
+## Review
+- 2026-03-29 ⭐
+```
+
+### Reading Markdown Format
+
+```markdown
+---
+title: "The Art of Learning"
+source: https://example.com/article
+imported_at: 2026-03-29T10:00:00
+synced_at: 2026-03-29T10:00:00
+---
+
+# The Art of Learning
+
+## Content
+[Full article text]
+
+## Vocabulary
+- abandon: to leave behind
+- derive: to obtain from
+
+## Key Sentences
+- "The most important skill is learning how to learn."
+
+## Summary (AI)
+> ...
+
+## My Notes
+- relates to chapter 3 concepts
+```
+
 ### Spaced Repetition (SM-2 Simplified)
 
 - Quality 0-2: Reset familiarity to 0, interval back to 1 day.
@@ -204,7 +274,7 @@ GET    /api/words/:word              # detail
 POST   /api/words                    # create
 PUT    /api/words/:word              # update
 DELETE /api/words/:word              # delete
-POST   /api/words/:word/explain      # AI explain
+POST   /api/words/:word/explain      # AI explain (streaming SSE)
 
 # Review
 GET    /api/review/today             # today's review queue
@@ -214,7 +284,7 @@ GET    /api/review/stats             # review statistics
 # Reading
 GET    /api/readings                  # list reading materials
 POST   /api/readings                  # add reading material
-POST   /api/readings/:id/analyze      # AI reading analysis
+POST   /api/readings/:id/analyze      # AI reading analysis (streaming SSE)
 
 # AI Chat
 WS     /api/chat                      # WebSocket English conversation
@@ -380,3 +450,41 @@ Located in `prompts/`. Support variable interpolation: `{{word}}`, `{{level}}`, 
 ## Deployment
 
 Local machine only. Single binary + SQLite file + Markdown docs directory. No external services required beyond AI API access.
+
+## Implementation Phases
+
+This project is large enough to warrant phased delivery. Each phase produces a usable system.
+
+### Phase 1: Core + CLI (Foundation)
+
+- Cargo workspace + `engai-core` library skeleton
+- SQLite schema + migrations + CRUD operations
+- Markdown parsing and generation (words, phrases, readings)
+- Bidirectional sync engine
+- SM-2 spaced repetition algorithm
+- AI integration (reqwest → Kimi/OpenAI, streaming SSE)
+- Prompt templates with variable interpolation
+- Configuration system (`config.toml`)
+- CLI subcommands: `add`, `explain`, `review`, `sync`, `read`, `import`, `export`, `stats`, `config`
+- `build.rs` for frontend embedding
+
+**Result**: Fully functional CLI-based learning system with AI and sync.
+
+### Phase 2: Web Server + React Frontend
+
+- Axum server with all API routes
+- Static file serving via `rust-embed`
+- WebSocket chat endpoint
+- React SPA: Dashboard, Vocabulary, WordCard, Review, Reading, Chat pages
+- Shadcn/ui components, Tailwind CSS, TanStack Query
+- Streaming AI responses in frontend (SSE for explain/analyze, WS for chat)
+
+**Result**: Full web-based learning interface at `localhost:3000`.
+
+### Phase 3: TUI + Polish
+
+- ratatui TUI with sidebar navigation
+- Terminal-based review, word browsing, stats
+- Dual-mode launch (Web + TUI concurrently)
+- Error handling, logging, edge case hardening
+- Documentation and scripts
