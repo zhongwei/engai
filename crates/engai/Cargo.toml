@@ -26,3 +26,6 @@ mime_guess = "2"
 futures = "0.3"
 async-stream = "0.3"
 uuid = { version = "1", features = ["v4"] }
+ratatui = "0.30.0"
+crossterm = "0.29"
+textwrap = "0.16"
