@@ -12,7 +12,7 @@ mod error;
 mod routes;
 mod server;
 mod state;
-mod tui;
+#[allow(dead_code)] mod tui;
 
 use clap::Parser;
 

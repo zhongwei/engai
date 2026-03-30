@@ -1,6 +1,6 @@
 use ratatui::{
     layout::{Constraint, Layout, Margin, Rect},
-    style::{Color, Modifier, Style, Stylize},
+    style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, List, ListItem, Paragraph, Wrap},
     Frame,
@@ -83,14 +83,13 @@ fn render_status(f: &mut Frame, area: Rect, app: &App) {
     let msg = if let Some(ref status) = app.status_message {
         status.clone()
     } else {
-        let hints = match app.panel {
+        match app.panel {
             Panel::Vocab => "[Enter] Detail [Tab] Switch [q] Quit".to_string(),
             Panel::Review => "[Space] Flip [1-5] Rate [n] Skip [q] Quit".to_string(),
             Panel::Read => "[Enter] Detail [q] Quit".to_string(),
             Panel::Chat => "[Enter] Send [q] Quit".to_string(),
             Panel::Stats => "[r] Refresh [q] Quit".to_string(),
-        };
-        hints
+        }
     };
     let status = Paragraph::new(Span::styled(
         format!(" {}", msg),

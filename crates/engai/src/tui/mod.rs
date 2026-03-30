@@ -16,7 +16,7 @@ use crossterm::{
 use ratatui::prelude::CrosstermBackend;
 use ratatui::Terminal;
 use std::io;
-use std::sync::Arc;
+
 use std::time::Duration;
 
 use crate::state::AppState;
@@ -84,9 +84,10 @@ async fn on_panel_enter(app: &mut App, state: &AppState) {
         }
         Panel::Chat => {
             if app.chat_messages.is_empty() {
-                match state.db.get_recent_chat(50).await {
-                    Ok(msgs) => app.chat_messages = msgs.into_iter().rev().collect(),
-                    Err(_) => {}
+                if let Ok(msgs) = state.db.get_recent_chat(50).await {
+                    app.chat_messages = msgs.into_iter().rev().collect();
+                } else {
+                    app.set_status("Failed to load chat history");
                 }
             }
         }
@@ -123,7 +124,7 @@ async fn handle_key(app: &mut App, state: &AppState, code: KeyCode, modifiers: K
         Panel::Stats => panel_stats::handle_key(app, state, code).await,
     }
 
-    if !(app.panel == Panel::Chat && !app.chat_input.is_empty())
+    if app.panel != Panel::Chat || app.chat_input.is_empty()
     {
         match code {
             KeyCode::Char('[') | KeyCode::Left => {

@@ -19,11 +19,8 @@ pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
                 return;
             }
 
-            match state.db.get_recent_chat(50).await {
-                Ok(msgs) => {
-                    app.chat_messages = msgs.into_iter().rev().collect();
-                }
-                Err(_) => {}
+            if let Ok(msgs) = state.db.get_recent_chat(50).await {
+                app.chat_messages = msgs.into_iter().rev().collect();
             }
 
             app.chat_loading = true;
@@ -48,11 +45,8 @@ pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
                 }
             }
 
-            match state.db.get_recent_chat(50).await {
-                Ok(msgs) => {
-                    app.chat_messages = msgs.into_iter().rev().collect();
-                }
-                Err(_) => {}
+            if let Ok(msgs) = state.db.get_recent_chat(50).await {
+                app.chat_messages = msgs.into_iter().rev().collect();
             }
 
             app.chat_loading = false;
