@@ -69,8 +69,19 @@ enum Commands {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() {
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "engai=info");
+    }
     tracing_subscriber::fmt::init();
+
+    if let Err(e) = run().await {
+        eprintln!("Error: {:#}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {

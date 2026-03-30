@@ -28,8 +28,27 @@ pub fn handle_tab(app: &mut App) {
     }
 }
 
-pub async fn handle_key(app: &mut App, _state: &AppState, code: KeyCode) {
+pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
     if app.vocab_detail.is_some() {
+        match code {
+            KeyCode::Char('e') => {
+                let detail = app.vocab_detail.clone().unwrap();
+                app.set_status("Requesting AI explanation...");
+                let ai = state.ai_client.clone();
+                let prompt = state.prompt_engine.clone();
+                let result = match &detail {
+                    VocabDetail::Word(w) => ai.explain_word(&w.word, &prompt).await,
+                    VocabDetail::Phrase(p) => ai.explain_phrase(&p.phrase, &prompt).await,
+                };
+                match result {
+                    Ok(_explanation) => {
+                        app.set_status("AI explanation received");
+                    }
+                    Err(e) => app.set_status(format!("AI error: {}", e)),
+                }
+            }
+            _ => return,
+        }
         return;
     }
 

@@ -84,9 +84,11 @@ fn render_status(f: &mut Frame, area: Rect, app: &App) {
         status.clone()
     } else {
         match app.panel {
-            Panel::Vocab => "[Enter] Detail [Tab] Switch [q] Quit".to_string(),
-            Panel::Review => "[Space] Flip [1-5] Rate [n] Skip [q] Quit".to_string(),
-            Panel::Read => "[Enter] Detail [q] Quit".to_string(),
+            Panel::Vocab => {
+                "[Up/Down] Scroll [Enter] Detail [Tab] Switch [[/]] Nav [q] Quit".to_string()
+            }
+            Panel::Review => "[Space] Flip [0-5] Rate [n] Skip [q] Quit".to_string(),
+            Panel::Read => "[Up/Down] Scroll [Enter] Detail [q] Quit".to_string(),
             Panel::Chat => "[Enter] Send [q] Quit".to_string(),
             Panel::Stats => "[r] Refresh [q] Quit".to_string(),
         }

@@ -58,6 +58,13 @@ pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
         KeyCode::Char('3') => submit_review(app, state, 3).await,
         KeyCode::Char('4') => submit_review(app, state, 4).await,
         KeyCode::Char('5') => submit_review(app, state, 5).await,
+        KeyCode::Char('n') => {
+            if app.review_index < app.review_items.len() {
+                app.review_index += 1;
+                app.review_show_answer = false;
+                app.set_status("Skipped");
+            }
+        }
         _ => {}
     }
 }
