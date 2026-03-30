@@ -8,6 +8,10 @@ mod cmd_read;
 mod cmd_review;
 mod cmd_stats;
 mod cmd_sync;
+mod error;
+mod routes;
+mod server;
+mod state;
 
 use clap::Parser;
 
@@ -82,7 +86,11 @@ async fn main() -> anyhow::Result<()> {
         Some(Commands::Config { action }) => cmd_config::run(action).await?,
         Some(Commands::Note { action }) => cmd_note::run(action).await?,
         Some(Commands::Server { port }) => {
-            println!("Server mode on port {} (Phase 2)", port)
+            let config = engai_core::config::Config::load_global()?;
+            let db_path = config.db_path();
+            let db = engai_core::db::Db::new(&db_path).await?;
+            let state = crate::state::AppState::new(std::sync::Arc::new(db), config)?;
+            crate::server::run_server(state, port).await?;
         }
         None => println!("Run `engai --help` for available commands"),
     }

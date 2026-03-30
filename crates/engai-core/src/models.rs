@@ -76,3 +76,11 @@ pub struct NewPhrase {
     pub phrase: String,
     pub meaning: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
+pub struct ChatEntry {
+    pub id: i64,
+    pub role: String,
+    pub content: String,
+    pub created_at: NaiveDateTime,
+}
