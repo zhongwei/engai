@@ -12,7 +12,7 @@ mod error;
 mod routes;
 mod server;
 mod state;
-#[allow(dead_code)] mod tui;
+mod tui;
 
 use clap::Parser;
 
@@ -93,7 +93,35 @@ async fn main() -> anyhow::Result<()> {
             let state = crate::state::AppState::new(std::sync::Arc::new(db), config)?;
             crate::server::run_server(state, port).await?;
         }
-        None => println!("Run `engai --help` for available commands"),
+        None => {
+            let config = engai_core::config::Config::load_global()?;
+            let db_path = config.db_path();
+            let db = engai_core::db::Db::new(&db_path).await?;
+            let state = crate::state::AppState::new(std::sync::Arc::new(db), config.clone())?;
+            let tui_state = state.clone();
+
+            let port = config.server.port;
+            let server_handle = tokio::spawn(async move {
+                if let Err(e) = crate::server::run_server(state, port).await {
+                    tracing::error!("Server error: {}", e);
+                }
+            });
+
+            let tui_handle = tokio::spawn(async move {
+                if let Err(e) = crate::tui::run_tui(tui_state).await {
+                    tracing::error!("TUI error: {}", e);
+                }
+            });
+
+            tokio::select! {
+                _ = tui_handle => {
+                    tracing::info!("TUI exited, shutting down server");
+                }
+                _ = server_handle => {
+                    tracing::info!("Server exited, shutting down TUI");
+                }
+            }
+        }
     }
 
     Ok(())
