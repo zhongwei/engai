@@ -12,6 +12,7 @@ mod error;
 mod routes;
 mod server;
 mod state;
+mod tui;
 
 use clap::Parser;
 
