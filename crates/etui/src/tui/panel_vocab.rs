@@ -1,14 +1,14 @@
 use crossterm::event::KeyCode;
 
 use super::app::{App, VocabDetail, VocabTab};
-use crate::state::AppState;
+use crate::api::ApiClient;
 
-pub async fn load_vocab(state: &AppState, app: &mut App) {
-    match state.word_service.list_words(None, None, 200, 0).await {
+pub async fn load_vocab(client: &ApiClient, app: &mut App) {
+    match client.list_words(200, 0).await {
         Ok(words) => app.words = words,
         Err(e) => app.set_status(format!("Failed to load words: {}", e)),
     }
-    match state.phrase_service.list_phrases(None, None, 200, 0).await {
+    match client.list_phrases(200, 0).await {
         Ok(phrases) => app.phrases = phrases,
         Err(e) => app.set_status(format!("Failed to load phrases: {}", e)),
     }
@@ -27,17 +27,15 @@ pub fn handle_tab(app: &mut App) {
     }
 }
 
-pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
+pub async fn handle_key(app: &mut App, client: &ApiClient, code: KeyCode) {
     if app.vocab_detail.is_some() {
         match code {
             KeyCode::Char('e') => {
                 let detail = app.vocab_detail.clone().unwrap();
                 app.set_status("Requesting AI explanation...");
-                let word_svc = state.word_service.clone();
-                let phrase_svc = state.phrase_service.clone();
                 let result = match &detail {
-                    VocabDetail::Word(w) => word_svc.explain_word(&w.word).await,
-                    VocabDetail::Phrase(p) => phrase_svc.explain_phrase(&p.phrase).await,
+                    VocabDetail::Word(w) => client.explain_word(&w.word).await,
+                    VocabDetail::Phrase(p) => client.explain_phrase(p.id).await,
                 };
                 match result {
                     Ok(_explanation) => {

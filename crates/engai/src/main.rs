@@ -12,7 +12,6 @@ mod error;
 mod routes;
 mod server;
 mod state;
-mod tui;
 
 use clap::Parser;
 
@@ -109,17 +108,20 @@ async fn run() -> anyhow::Result<()> {
             let db_path = config.db_path();
             let db = engai_core::db::Db::new(&db_path).await?;
             let state = crate::state::AppState::new(std::sync::Arc::new(db), config.clone());
-            let tui_state = state.clone();
 
             let port = config.server.port;
+            let server_url = format!("http://127.0.0.1:{}", port);
+            
             let server_handle = tokio::spawn(async move {
                 if let Err(e) = crate::server::run_server(state, port).await {
                     tracing::error!("Server error: {}", e);
                 }
             });
 
+            let tui_url = server_url.clone();
             let tui_handle = tokio::spawn(async move {
-                if let Err(e) = crate::tui::run_tui(tui_state).await {
+                tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                if let Err(e) = etui::run_tui(&tui_url).await {
                     tracing::error!("TUI error: {}", e);
                 }
             });

@@ -10,6 +10,7 @@ path = "src/main.rs"
 [dependencies]
 engai-core = { path = "../engai-core" }
 esync = { path = "../esync" }
+etui = { path = "../etui" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

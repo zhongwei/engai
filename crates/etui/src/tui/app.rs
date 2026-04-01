@@ -1,4 +1,4 @@
-use engai_core::models::{ChatEntry, Phrase, Reading, Word};
+use crate::api::{ChatEntry, Phrase, Word};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Panel {
@@ -43,34 +43,28 @@ pub struct App {
     pub panel: Panel,
     pub should_quit: bool,
 
-    // Vocab panel
     pub words: Vec<Word>,
     pub phrases: Vec<Phrase>,
     pub vocab_tab: VocabTab,
     pub vocab_list_index: usize,
     pub vocab_detail: Option<VocabDetail>,
 
-    // Review panel
     pub review_items: Vec<ReviewItem>,
     pub review_index: usize,
     pub review_show_answer: bool,
     pub review_loading: bool,
 
-    // Read panel
-    pub readings: Vec<Reading>,
+    pub readings: Vec<crate::api::Reading>,
     pub reading_list_index: usize,
     pub reading_detail: Option<ReadingDetail>,
 
-    // Chat panel
     pub chat_messages: Vec<ChatEntry>,
     pub chat_input: String,
     pub chat_loading: bool,
     pub chat_error: Option<String>,
 
-    // Stats panel
     pub stats: Option<StatsData>,
 
-    // Status
     pub status_message: Option<String>,
     pub status_message_time: Option<std::time::Instant>,
 }
@@ -100,7 +94,7 @@ pub struct ReviewItem {
 
 #[derive(Debug, Clone)]
 pub struct ReadingDetail {
-    pub reading: Reading,
+    pub reading: crate::api::Reading,
     pub analysis: Option<String>,
 }
 

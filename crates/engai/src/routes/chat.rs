@@ -1,16 +1,77 @@
 use axum::{
-    extract::{State, WebSocketUpgrade, ws::Message},
+    extract::{Query, State, WebSocketUpgrade, ws::Message},
     response::IntoResponse,
     routing::get,
-    Router,
+    Json, Router,
 };
 use futures::StreamExt;
 use serde::Deserialize;
 
+use crate::error::ApiResult;
 use crate::state::AppState;
 
 pub fn router() -> Router<AppState> {
-    Router::new().route("/", get(ws_handler))
+    Router::new()
+        .route("/", get(ws_handler))
+        .route("/history", get(get_history))
+        .route("/send", get(send_message))
+}
+
+#[derive(Deserialize)]
+struct HistoryQuery {
+    limit: Option<i64>,
+}
+
+async fn get_history(
+    State(state): State<AppState>,
+    Query(query): Query<HistoryQuery>,
+) -> ApiResult<Json<Vec<engai_core::models::ChatEntry>>> {
+    let entries = state
+        .chat_service
+        .get_recent(query.limit.unwrap_or(50))
+        .await?;
+    Ok(Json(entries))
+}
+
+#[derive(Deserialize)]
+struct SendMessageQuery {
+    content: String,
+}
+
+async fn send_message(
+    State(state): State<AppState>,
+    Query(query): Query<SendMessageQuery>,
+) -> ApiResult<Json<engai_core::models::ChatEntry>> {
+    state.chat_service.add_message("user", &query.content).await?;
+    
+    let recent = state.chat_service.get_recent(20).await.unwrap_or_default();
+    
+    let mut messages: Vec<engai_core::ai::ChatMessage> = recent
+        .into_iter()
+        .rev()
+        .map(|e| engai_core::ai::ChatMessage {
+            role: e.role,
+            content: e.content,
+        })
+        .collect();
+    
+    messages.insert(
+        0,
+        engai_core::ai::ChatMessage {
+            role: "system".to_string(),
+            content: "You are an English learning assistant. Help the user improve their English skills."
+                .to_string(),
+        },
+    );
+    
+    let response = state.ai_service.chat_completion(&messages).await?;
+    
+    state.chat_service.add_message("assistant", &response).await?;
+    
+    let entries = state.chat_service.get_recent(1).await?;
+    let entry = entries.into_iter().next().unwrap();
+    
+    Ok(Json(entry))
 }
 
 async fn ws_handler(ws: WebSocketUpgrade, State(state): State<AppState>) -> impl IntoResponse {

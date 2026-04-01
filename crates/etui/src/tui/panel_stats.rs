@@ -1,10 +1,10 @@
 use crossterm::event::KeyCode;
 
 use super::app::{App, StatsData};
-use crate::state::AppState;
+use crate::api::ApiClient;
 
-pub async fn load_stats(state: &AppState, app: &mut App) {
-    match state.stats_service.get_stats().await {
+pub async fn load_stats(client: &ApiClient, app: &mut App) {
+    match client.get_stats().await {
         Ok(s) => {
             app.stats = Some(StatsData {
                 word_count: s.word_count,
@@ -19,9 +19,9 @@ pub async fn load_stats(state: &AppState, app: &mut App) {
     }
 }
 
-pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
+pub async fn handle_key(app: &mut App, client: &ApiClient, code: KeyCode) {
     if code == KeyCode::Char('r') {
-        load_stats(state, app).await;
+        load_stats(client, app).await;
         app.set_status("Stats refreshed");
     }
 }

@@ -1,16 +1,16 @@
 use crossterm::event::KeyCode;
 
 use super::app::{App, ReadingDetail};
-use crate::state::AppState;
+use crate::api::ApiClient;
 
-pub async fn load_readings(state: &AppState, app: &mut App) {
-    match state.reading_service.list_readings(100, 0).await {
+pub async fn load_readings(client: &ApiClient, app: &mut App) {
+    match client.list_readings(100, 0).await {
         Ok(readings) => app.readings = readings,
         Err(e) => app.set_status(format!("Failed to load readings: {}", e)),
     }
 }
 
-pub async fn handle_key(app: &mut App, _state: &AppState, code: KeyCode) {
+pub async fn handle_key(app: &mut App, _client: &ApiClient, code: KeyCode) {
     if app.reading_detail.is_some() {
         return;
     }
