@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use engai_core::config::Config;
 use engai_core::db::Db;
-use engai_core::markdown::{MarkdownPhrase, MarkdownWord};
+use engai_core::{MarkdownPhrase, MarkdownWord};
 
 use crate::state::AppState;
 

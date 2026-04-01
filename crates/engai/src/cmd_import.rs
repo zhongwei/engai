@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use engai_core::config::Config;
 use engai_core::db::{Db, PhraseRepository, WordRepository};
-use engai_core::markdown::{MarkdownPhrase, MarkdownWord};
+use engai_core::{MarkdownPhrase, MarkdownWord};
 
 pub async fn run(path: &str) -> Result<()> {
     let config = Config::load_global()?;

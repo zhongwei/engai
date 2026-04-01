@@ -4,7 +4,7 @@ use anyhow::Result;
 
 use engai_core::config::Config;
 use engai_core::db::{Db, ReadingRepository};
-use engai_core::markdown::MarkdownReading;
+use esync::MarkdownReading;
 
 pub async fn run(file: &str) -> Result<()> {
     let config = Config::load_global()?;

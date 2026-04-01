@@ -1,18 +1,27 @@
-use std::path::Path;
+use std::path::PathBuf;
 use std::sync::Arc;
 
-use crate::db::Db;
-use crate::sync::SyncEngine;
+use crate::db::{Db, ExampleRepository, NoteRepository, PhraseRepository, ReviewRepository, WordRepository};
+use crate::SyncDbAdapter;
+use esync::SyncEngine;
 
 #[derive(Clone)]
 pub struct SyncService {
-    engine: Arc<SyncEngine>,
+    engine: Arc<SyncEngine<SyncDbAdapter>>,
 }
 
 impl SyncService {
-    pub fn new(db: Arc<Db>, docs_path: &Path, prompts_path: &Path) -> Self {
+    pub fn new(db: Arc<Db>, docs_path: &std::path::Path, _prompts_path: &std::path::Path) -> Self {
+        let pool = db.pool().clone();
+        let adapter = SyncDbAdapter::new(
+            WordRepository::new(pool.clone()),
+            PhraseRepository::new(pool.clone()),
+            ExampleRepository::new(pool.clone()),
+            NoteRepository::new(pool.clone()),
+            ReviewRepository::new(pool),
+        );
         Self {
-            engine: Arc::new(SyncEngine::new(db, docs_path, prompts_path)),
+            engine: Arc::new(SyncEngine::new(adapter, docs_path.to_path_buf())),
         }
     }
 
