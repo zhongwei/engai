@@ -74,7 +74,7 @@ engai/
 │           │   └── sync_service.rs       # Delegates to esync crate
 │           ├── handlers/         # Axum HTTP handlers
 │           │   ├── mod.rs
-│           │   ├── words.rs      # Also defines AppState
+│           │   ├── words.rs
 │           │   ├── phrases.rs
 │           │   ├── reviews.rs
 │           │   ├── readings.rs
@@ -202,7 +202,7 @@ All business logic lives in services. Services are `Clone`-able for sharing via 
 
 ### 2.4 Handlers Layer (`handlers/`)
 
-Axum HTTP handlers extract State/Path/Query, delegate to services, return JSON. The `AppState` struct (defined in `handlers/words.rs` or a dedicated `state.rs`) holds all services.
+Axum HTTP handlers extract State/Path/Query, delegate to services, return JSON. The `AppState` struct (defined in `state.rs`) holds all services.
 
 ### 2.5 Error Handling
 
