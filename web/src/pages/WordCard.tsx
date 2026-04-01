@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { apiFetch, fetchSSE } from '@/lib/api'
+import { useParams, Link } from '@tanstack/react-router'
+import { useWord } from '@/features/vocab/queries'
+import { fetchSSE } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -10,28 +10,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import FamiliarityBadge from '@/components/FamiliarityBadge'
 import MarkdownRender from '@/components/MarkdownRender'
 import { Sparkles, ArrowLeft } from 'lucide-react'
-import { Link } from 'react-router-dom'
-
-interface WordDetail {
-  word: string
-  meaning: string
-  phonetic?: string
-  examples?: string[]
-  notes?: string
-  familiarity: number
-}
 
 export default function WordCard() {
-  const { word } = useParams<{ word: string }>()
+  const { word } = useParams({ from: '/words/$word' })
   const [explanation, setExplanation] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamError, setStreamError] = useState('')
 
-  const { data, isLoading } = useQuery<WordDetail>({
-    queryKey: ['word', word],
-    queryFn: () => apiFetch<WordDetail>(`/words/${encodeURIComponent(word!)}`),
-    enabled: !!word,
-  })
+  const { data, isLoading } = useWord(word)
 
   const handleExplain = () => {
     if (!word || isStreaming) return

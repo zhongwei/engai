@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { apiFetch, fetchSSE } from '@/lib/api'
+import { useReadings, useReading } from '@/features/readings/queries'
+import { fetchSSE } from '@/lib/api-client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -8,44 +8,15 @@ import { Skeleton } from '@/components/ui/skeleton'
 import MarkdownRender from '@/components/MarkdownRender'
 import { Sparkles, FileText } from 'lucide-react'
 
-interface Reading {
-  id: number
-  title: string
-  content?: string
-  source?: string
-  created_at: string
-}
-
-interface ReadingDetail {
-  id: number
-  title: string
-  content: string
-  source?: string
-  created_at: string
-}
-
-interface ReadingsResponse {
-  readings: Reading[]
-}
-
 export default function Reading() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [analysis, setAnalysis] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
 
-  const { data: readingsResp, isLoading } = useQuery<ReadingsResponse>({
-    queryKey: ['readings'],
-    queryFn: () => apiFetch<ReadingsResponse>('/readings'),
-  })
+  const { data: readingsResp, isLoading } = useReadings()
+  const { data: detail } = useReading(selectedId)
 
   const readings = readingsResp?.readings ?? []
-
-  const { data: detail } = useQuery<ReadingDetail>({
-    queryKey: ['reading', selectedId],
-    queryFn: () => apiFetch<ReadingDetail>(`/readings/${selectedId}`),
-    enabled: !!selectedId,
-  })
-
   const selected = selectedId ? readings.find(r => r.id === selectedId) : null
 
   const handleAnalyze = () => {

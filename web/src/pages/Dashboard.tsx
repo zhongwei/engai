@@ -1,21 +1,10 @@
-import { useQuery } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/api'
+import { useStats } from '@/features/stats/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { BookOpen, MessageSquare, RefreshCw, CheckCircle } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
-interface Stats {
-  word_count: number
-  phrase_count: number
-  pending_reviews: number
-  reviewed_today: number
-}
-
 export default function Dashboard() {
-  const { data: stats, isLoading } = useQuery<Stats>({
-    queryKey: ['stats'],
-    queryFn: () => apiFetch<Stats>('/stats'),
-  })
+  const { data: stats, isLoading } = useStats()
 
   const cards: { title: string; value: number | undefined; icon: LucideIcon; color: string }[] = [
     { title: 'Words', value: stats?.word_count, icon: BookOpen, color: 'text-blue-500' },

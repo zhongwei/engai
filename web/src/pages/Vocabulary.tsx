@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/api'
+import { Link } from '@tanstack/react-router'
+import { useWords } from '@/features/vocab/queries'
+import { usePhrases } from '@/features/phrases/queries'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -10,40 +10,11 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import FamiliarityBadge from '@/components/FamiliarityBadge'
 import { Plus } from 'lucide-react'
 
-interface Word {
-  word: string
-  meaning: string
-  phonetic?: string
-  familiarity: number
-}
-
-interface Phrase {
-  id: number
-  phrase: string
-  meaning: string
-  familiarity: number
-}
-
-interface WordsResponse {
-  words: Word[]
-}
-
-interface PhrasesResponse {
-  phrases: Phrase[]
-}
-
 export default function Vocabulary() {
   const [search, setSearch] = useState('')
 
-  const { data: wordsResp, isLoading: wordsLoading } = useQuery<WordsResponse>({
-    queryKey: ['words'],
-    queryFn: () => apiFetch<WordsResponse>('/words'),
-  })
-
-  const { data: phrasesResp, isLoading: phrasesLoading } = useQuery<PhrasesResponse>({
-    queryKey: ['phrases'],
-    queryFn: () => apiFetch<PhrasesResponse>('/phrases'),
-  })
+  const { data: wordsResp, isLoading: wordsLoading } = useWords()
+  const { data: phrasesResp, isLoading: phrasesLoading } = usePhrases()
 
   const words = wordsResp?.words ?? []
   const phrases = phrasesResp?.phrases ?? []
@@ -91,7 +62,7 @@ export default function Vocabulary() {
             ) : (
               <div className="space-y-2 p-2">
                 {filteredWords.map(w => (
-                  <Link key={w.word} to={`/words/${encodeURIComponent(w.word)}`}>
+                  <Link key={w.word} to="/words/$word" params={{ word: w.word }}>
                     <Card className="hover:bg-accent transition-colors cursor-pointer">
                       <CardContent className="flex items-center justify-between p-3">
                         <div className="min-w-0">

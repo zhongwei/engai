@@ -1,32 +1,16 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { apiFetch } from '@/lib/api'
+import { useReviewToday } from '@/features/review/queries'
+import { submitReview } from '@/features/review/api'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { RotateCcw } from 'lucide-react'
-
-interface ReviewItem {
-  target_type: 'word' | 'phrase'
-  id: number
-  display: string
-  familiarity: number
-  interval: number
-  ease_factor: number
-}
-
-interface ReviewTodayResponse {
-  items: ReviewItem[]
-}
 
 export default function Review() {
   const [flipped, setFlipped] = useState(false)
   const [submitted, setSubmitted] = useState<number[]>([])
   const [stats, setStats] = useState({ correct: 0, wrong: 0 })
 
-  const { data: resp, isLoading } = useQuery<ReviewTodayResponse>({
-    queryKey: ['review-today'],
-    queryFn: () => apiFetch<ReviewTodayResponse>('/review/today'),
-  })
+  const { data: resp, isLoading } = useReviewToday()
 
   const queue = resp?.items ?? []
   const remaining = queue.filter(item => !submitted.includes(item.id))
@@ -37,10 +21,7 @@ export default function Review() {
   const handleRate = async (quality: number) => {
     if (!current) return
     try {
-      await apiFetch(`/review/${current.target_type}/${current.id}`, {
-        method: 'POST',
-        body: JSON.stringify({ quality }),
-      })
+      await submitReview(current.target_type, current.id, quality)
       setSubmitted(prev => [...prev, current.id])
       if (quality >= 3) setStats(s => ({ ...s, correct: s.correct + 1 }))
       else setStats(s => ({ ...s, wrong: s.wrong + 1 }))

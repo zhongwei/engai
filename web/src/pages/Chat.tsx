@@ -6,17 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { useWebSocket } from '@/hooks/useWebSocket'
 import { Send, Wifi, WifiOff, Trash2 } from 'lucide-react'
-
-interface ChatMessage {
-  role: 'user' | 'assistant'
-  content: string
-}
-
-interface WsMessage {
-  role?: string
-  content?: string
-  message?: string
-}
+import type { ChatMessage, WsMessage } from '@/features/chat/types'
 
 export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
