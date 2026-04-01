@@ -241,7 +241,40 @@ Queries: `useReadings`, `useReading`, `useCreateReading`.
 
 Types: `ChatMessage`.
 API: (uses WebSocket, so minimal REST API).
-Keep `useWebSocket` hook in this feature.
+Create `web/src/features/chat/hooks/use-websocket.ts` by copying the existing `useWebSocket.ts` logic:
+
+```typescript
+import { useRef, useEffect, useState, useCallback } from "react";
+
+interface UseWebSocketOptions {
+  onMessage: (data: string) => void;
+  onError?: (error: Event) => void;
+}
+
+export function useWebSocket(url: string, options: UseWebSocketOptions) {
+  const wsRef = useRef<WebSocket | null>(null);
+  const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    const ws = new WebSocket(url);
+    ws.onopen = () => setConnected(true);
+    ws.onclose = () => {
+      setConnected(false);
+      setTimeout(() => { /* reconnect */ }, 3000);
+    };
+    ws.onmessage = (event) => options.onMessage(event.data);
+    ws.onerror = (e) => options.onError?.(e);
+    wsRef.current = ws;
+    return () => ws.close();
+  }, [url]);
+
+  const send = useCallback((data: string) => {
+    wsRef.current?.send(data);
+  }, []);
+
+  return { connected, send };
+}
+```
 
 - [ ] **Step 6: Commit**
 
@@ -415,7 +448,8 @@ function VocabularyPage() {
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { router } from "./routeTree.gen";
+import { routeTree } from "./routeTree.gen";
+import { createRouter, RouterProvider } from "@tanstack/react-router";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -423,10 +457,12 @@ const queryClient = new QueryClient({
   },
 });
 
+const router = createRouter({ routeTree });
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      {/* TanStack Router provider */}
+      <RouterProvider router={router} />
     </QueryClientProvider>
   </StrictMode>
 );

@@ -170,25 +170,18 @@ pub struct PhraseDetail {
     pub interval: i32,
     pub ease_factor: f64,
     pub next_review: Option<chrono::NaiveDateTime>,
-    pub updated_at: chrono::NaiveDateTime>,
+    pub updated_at: chrono::NaiveDateTime,
 }
-```
 
-Add `async-trait = "0.1"` to esync's Cargo.toml.
-
-- [ ] **Step 2: Move sync engine**
-
-Copy `sync.rs` from engai-core to `crates/esync/src/sync.rs`. Refactor `SyncEngine` to use the `SyncDb` trait instead of `Arc<Db>`:
-
-```rust
-use std::path::PathBuf;
-use crate::models::*;
-use crate::markdown::*;
-use crate::sync_db::SyncDb;
-
-pub struct SyncEngine<T: SyncDb> {
-    db: T,
-    docs_path: PathBuf,
+pub struct PhraseDetail {
+    pub id: i64,
+    pub phrase: String,
+    pub meaning: String,
+    pub familiarity: i32,
+    pub interval: i32,
+    pub ease_factor: f64,
+    pub next_review: Option<chrono::NaiveDateTime>,
+    pub updated_at: chrono::NaiveDateTime,
 }
 
 impl<T: SyncDb> SyncEngine<T> {

@@ -492,7 +492,7 @@ enum Commands {
     },
     /// Start HTTP server only
     Svr {
-        #[arg(short, long, default_value_t = 3000)]
+        #[arg(short, long, default_value_t = 9000)]
         port: u16,
         #[arg(long, default_value = "127.0.0.1")]
         host: String,

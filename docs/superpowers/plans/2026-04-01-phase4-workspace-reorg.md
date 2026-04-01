@@ -32,7 +32,7 @@ mv crates/engai-core/src/db apps/engai/src/db
 mv crates/engai-core/src/services apps/engai/src/services
 mv crates/engai-core/src/config.rs apps/engai/src/config.rs
 mv crates/engai-core/src/review.rs apps/engai/src/review.rs
-mv crates/engai-core/src/lib.rs /dev/null  # Don't need lib.rs for binary
+mv crates/engai-core/src/lib.rs apps/engai/src/_lib_old.rs  # Will be deleted; binary doesn't need lib.rs
 ```
 
 Move AI and prompt files:

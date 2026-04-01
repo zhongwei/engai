@@ -718,8 +718,7 @@ impl WordService {
 
     pub async fn get_examples(&self, word: &str) -> anyhow::Result<Vec<Example>> {
         let w = self.repo.find_by_word(word).await?.ok_or_else(|| anyhow::anyhow!("Word not found"))?;
-        // Use ExampleRepository via injection or pass separately
-        todo!("Wire up example_repo")
+        self.example_repo.find_by_target("word", w.id).await
     }
 }
 ```
@@ -916,7 +915,93 @@ git commit -m "refactor: update TUI panels to use services"
 
 ---
 
-### Task 7: Final cleanup
+### Task 8: Replace anyhow with structured AppError
+
+**Files:**
+- Modify: `crates/engai-core/src/lib.rs` — add error module
+- Create: `crates/engai-core/src/error.rs`
+- Modify: `crates/engai/src/error.rs` — align with core error type
+- Modify: All service files — use `crate::error::Result<T>` instead of `anyhow::Result<T>`
+
+- [ ] **Step 1: Create engai-core error type**
+
+`crates/engai-core/src/error.rs`:
+```rust
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
+use serde_json::json;
+
+#[derive(Debug)]
+pub enum AppError {
+    Database(sqlx::Error),
+    NotFound(String),
+    ValidationError(String),
+    AiError(String),
+    Internal(String),
+}
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppError::Database(e) => write!(f, "Database error: {}", e),
+            AppError::NotFound(s) => write!(f, "Not found: {}", s),
+            AppError::ValidationError(s) => write!(f, "Validation error: {}", s),
+            AppError::AiError(s) => write!(f, "AI error: {}", s),
+            AppError::Internal(s) => write!(f, "Internal error: {}", s),
+        }
+    }
+}
+
+impl std::error::Error for AppError {}
+
+impl From<sqlx::Error> for AppError {
+    fn from(e: sqlx::Error) -> Self {
+        AppError::Database(e)
+    }
+}
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        let (status, message) = match &self {
+            AppError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Database error"),
+            AppError::NotFound(s) => (StatusCode::NOT_FOUND, s.as_str()),
+            AppError::ValidationError(s) => (StatusCode::BAD_REQUEST, s.as_str()),
+            AppError::AiError(s) => (StatusCode::BAD_GATEWAY, s.as_str()),
+            AppError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Internal error"),
+        };
+        (status, axum::Json(json!({ "error": message }))).into_response()
+    }
+}
+
+pub type Result<T> = std::result::Result<T, AppError>;
+```
+
+- [ ] **Step 2: Update lib.rs**
+
+Add `pub mod error;` to `crates/engai-core/src/lib.rs`.
+
+- [ ] **Step 3: Migrate services to use AppError**
+
+Replace `anyhow::Result<T>` with `crate::error::Result<T>` in all service files. Replace `anyhow::anyhow!()` with appropriate `AppError` variants.
+
+- [ ] **Step 4: Update engai binary's error.rs**
+
+Align `crates/engai/src/error.rs` with the core error type, or re-export it.
+
+- [ ] **Step 5: Verify compilation**
+
+Run: `cargo check`
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add -A
+git commit -m "feat: replace anyhow with structured AppError enum in services"
+```
+
+---
+
+### Task 9: Final cleanup
 
 **Files:**
 - Modify: `crates/engai-core/src/lib.rs` — ensure clean exports
