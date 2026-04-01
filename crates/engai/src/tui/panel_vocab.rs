@@ -4,11 +4,11 @@ use super::app::{App, VocabDetail, VocabTab};
 use crate::state::AppState;
 
 pub async fn load_vocab(state: &AppState, app: &mut App) {
-    match state.word_repo.list_words(None, None, 200, 0).await {
+    match state.word_service.list_words(None, None, 200, 0).await {
         Ok(words) => app.words = words,
         Err(e) => app.set_status(format!("Failed to load words: {}", e)),
     }
-    match state.phrase_repo.list_phrases(None, None, 200, 0).await {
+    match state.phrase_service.list_phrases(None, None, 200, 0).await {
         Ok(phrases) => app.phrases = phrases,
         Err(e) => app.set_status(format!("Failed to load phrases: {}", e)),
     }
@@ -33,11 +33,11 @@ pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
             KeyCode::Char('e') => {
                 let detail = app.vocab_detail.clone().unwrap();
                 app.set_status("Requesting AI explanation...");
-                let ai = state.ai_client.clone();
-                let prompt = state.prompt_engine.clone();
+                let word_svc = state.word_service.clone();
+                let phrase_svc = state.phrase_service.clone();
                 let result = match &detail {
-                    VocabDetail::Word(w) => ai.explain_word(&w.word, &prompt).await,
-                    VocabDetail::Phrase(p) => ai.explain_phrase(&p.phrase, &prompt).await,
+                    VocabDetail::Word(w) => word_svc.explain_word(&w.word).await,
+                    VocabDetail::Phrase(p) => phrase_svc.explain_phrase(&p.phrase).await,
                 };
                 match result {
                     Ok(_explanation) => {

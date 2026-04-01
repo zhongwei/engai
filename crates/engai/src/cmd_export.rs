@@ -1,20 +1,22 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 
 use engai_core::config::Config;
-use engai_core::db::{Db, PhraseRepository, WordRepository};
+use engai_core::db::Db;
 use engai_core::markdown::{MarkdownPhrase, MarkdownWord};
+
+use crate::state::AppState;
 
 pub async fn run(word: Option<String>, phrase: Option<String>, all: bool) -> Result<()> {
     let config = Config::load_global()?;
     let db = Db::new(&config.db_path()).await?;
-    let pool = db.pool().clone();
-    let word_repo = WordRepository::new(pool.clone());
-    let phrase_repo = PhraseRepository::new(pool);
+    let state = AppState::new(Arc::new(db), config.clone());
     let docs_path = config.docs_path();
 
     if all {
-        let words = word_repo.list_words(None, None, 1000, 0).await?;
-        let phrases = phrase_repo.list_phrases(None, None, 1000, 0).await?;
+        let words = state.word_service.list_words(None, None, 1000, 0).await?;
+        let phrases = state.phrase_service.list_phrases(None, None, 1000, 0).await?;
 
         let vocab_dir = docs_path.join("01_vocab");
         for w in &words {
@@ -61,9 +63,7 @@ pub async fn run(word: Option<String>, phrase: Option<String>, all: bool) -> Res
     }
 
     if let Some(word) = word {
-        let w = word_repo.get_word(&word).await?.ok_or_else(|| {
-            anyhow::anyhow!("Word '{}' not found", word)
-        })?;
+        let w = state.word_service.get_word(&word).await?;
         let md = MarkdownWord {
             word: w.word.clone(),
             phonetic: w.phonetic.clone(),
@@ -83,7 +83,7 @@ pub async fn run(word: Option<String>, phrase: Option<String>, all: bool) -> Res
     }
 
     if let Some(phrase) = phrase {
-        let p = phrase_repo.get_phrase(&phrase).await?.ok_or_else(|| {
+        let p = state.phrase_service.find_phrase(&phrase).await?.ok_or_else(|| {
             anyhow::anyhow!("Phrase '{}' not found", phrase)
         })?;
         let md = MarkdownPhrase {

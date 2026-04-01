@@ -14,18 +14,18 @@ pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
             let input = app.chat_input.trim().to_string();
             app.chat_input.clear();
 
-            if let Err(e) = state.chat_repo.add_chat_message("user", &input).await {
+            if let Err(e) = state.chat_service.add_message("user", &input).await {
                 app.chat_error = Some(format!("DB error: {}", e));
                 return;
             }
 
-            if let Ok(msgs) = state.chat_repo.get_recent_chat(50).await {
+            if let Ok(msgs) = state.chat_service.get_recent(50).await {
                 app.chat_messages = msgs.into_iter().rev().collect();
             }
 
             app.chat_loading = true;
 
-            let recent = state.chat_repo.get_recent_chat(20).await.unwrap_or_default();
+            let recent = state.chat_service.get_recent(20).await.unwrap_or_default();
             let messages: Vec<ChatMessage> = recent
                 .iter()
                 .map(|r| ChatMessage {
@@ -34,10 +34,9 @@ pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
                 })
                 .collect();
 
-            let ai = state.ai_client.clone();
-            match ai.chat_completion(&messages).await {
+            match state.ai_service.chat_completion(&messages).await {
                 Ok(response) => {
-                    let _ = state.chat_repo.add_chat_message("assistant", &response).await;
+                    let _ = state.chat_service.add_message("assistant", &response).await;
                     app.chat_error = None;
                 }
                 Err(e) => {
@@ -45,7 +44,7 @@ pub async fn handle_key(app: &mut App, state: &AppState, code: KeyCode) {
                 }
             }
 
-            if let Ok(msgs) = state.chat_repo.get_recent_chat(50).await {
+            if let Ok(msgs) = state.chat_service.get_recent(50).await {
                 app.chat_messages = msgs.into_iter().rev().collect();
             }
 

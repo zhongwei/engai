@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::error::{ApiError, ApiResult};
+use crate::error::ApiResult;
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -40,10 +40,9 @@ async fn list_notes(
     Query(params): Query<NoteQuery>,
 ) -> ApiResult<Json<Vec<engai_core::models::Note>>> {
     let notes = state
-        .note_repo
-        .get_notes(&params.target_type, params.target_id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+        .note_service
+        .list_notes(&params.target_type, params.target_id)
+        .await?;
     Ok(Json(notes))
 }
 
@@ -52,10 +51,9 @@ async fn create_note(
     Json(body): Json<CreateNoteBody>,
 ) -> ApiResult<Json<engai_core::models::Note>> {
     let note = state
-        .note_repo
+        .note_service
         .add_note(&body.target_type, body.target_id, &body.content)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+        .await?;
     Ok(Json(note))
 }
 
@@ -64,16 +62,10 @@ async fn update_note(
     Path(id): Path<i64>,
     Json(body): Json<UpdateNoteBody>,
 ) -> ApiResult<Json<engai_core::models::Note>> {
-    state
-        .note_repo
-        .delete_note(id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
     let note = state
-        .note_repo
-        .add_note(&body.target_type, body.target_id, &body.content)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+        .note_service
+        .update_note(id, &body.target_type, body.target_id, &body.content)
+        .await?;
     Ok(Json(note))
 }
 
@@ -81,10 +73,6 @@ async fn delete_note(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    state
-        .note_repo
-        .delete_note(id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+    state.note_service.delete_note(id).await?;
     Ok(Json(json!({ "deleted": true })))
 }

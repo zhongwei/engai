@@ -2,35 +2,24 @@ use crossterm::event::KeyCode;
 
 use super::app::{App, ReviewItem};
 use crate::state::AppState;
-use engai_core::review::calculate_next_review;
 
 pub async fn load_review(state: &AppState, app: &mut App) {
     app.review_loading = true;
 
-    let words = state.word_repo.get_today_review_words().await.unwrap_or_default();
-    let phrases = state.phrase_repo.get_today_review_phrases().await.unwrap_or_default();
+    let entries = state.review_service.get_today_reviews().await.unwrap_or_default();
 
-    let mut items: Vec<ReviewItem> = words
+    let items: Vec<ReviewItem> = entries
         .into_iter()
-        .map(|w| ReviewItem {
-            target_type: "word".to_string(),
-            id: w.id,
-            display: w.word,
-            meaning: w.meaning,
-            familiarity: w.familiarity,
-            interval: w.interval,
-            ease_factor: w.ease_factor,
+        .map(|e| ReviewItem {
+            target_type: e.target_type,
+            id: e.id,
+            display: e.display,
+            meaning: e.meaning,
+            familiarity: e.familiarity,
+            interval: e.interval,
+            ease_factor: e.ease_factor,
         })
         .collect();
-    items.extend(phrases.into_iter().map(|p| ReviewItem {
-        target_type: "phrase".to_string(),
-        id: p.id,
-        display: p.phrase,
-        meaning: p.meaning,
-        familiarity: p.familiarity,
-        interval: p.interval,
-        ease_factor: p.ease_factor,
-    }));
 
     app.review_items = items;
     app.review_index = 0;
@@ -76,46 +65,10 @@ async fn submit_review(app: &mut App, state: &AppState, quality: i32) {
     let quality = quality.clamp(0, 5);
 
     let item = app.review_items[app.review_index].clone();
-    let result =
-        calculate_next_review(quality, item.interval, item.ease_factor);
-
     let _ = state
-        .review_repo
-        .add_review(&item.target_type, item.id, quality)
+        .review_service
+        .submit_review(&item.target_type, item.id, quality)
         .await;
-
-    match item.target_type.as_str() {
-        "word" => {
-            let _ = state
-                .word_repo
-                .update_word(
-                    item.id,
-                    None,
-                    None,
-                    None,
-                    Some(result.familiarity),
-                    Some(result.next_review),
-                    Some(result.interval),
-                    Some(result.ease_factor),
-                )
-                .await;
-        }
-        "phrase" => {
-            let _ = state
-                .phrase_repo
-                .update_phrase(
-                    item.id,
-                    None,
-                    None,
-                    Some(result.familiarity),
-                    Some(result.next_review),
-                    Some(result.interval),
-                    Some(result.ease_factor),
-                )
-                .await;
-        }
-        _ => {}
-    }
 
     app.review_index += 1;
     app.review_show_answer = false;

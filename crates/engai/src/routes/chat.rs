@@ -32,7 +32,7 @@ async fn handle_socket(mut socket: axum::extract::ws::WebSocket, state: AppState
             Err(_) => continue,
         };
 
-        if let Err(e) = state.chat_repo.add_chat_message("user", &input.content).await {
+        if let Err(e) = state.chat_service.add_message("user", &input.content).await {
             let _ = socket
                 .send(Message::Text(
                     format!("{{\"error\":\"{}\"}}", e).into(),
@@ -41,7 +41,7 @@ async fn handle_socket(mut socket: axum::extract::ws::WebSocket, state: AppState
             continue;
         }
 
-        let recent = state.chat_repo.get_recent_chat(20).await.unwrap_or_default();
+        let recent = state.chat_service.get_recent(20).await.unwrap_or_default();
 
         let mut messages: Vec<engai_core::ai::ChatMessage> = recent
             .into_iter()
@@ -61,7 +61,7 @@ async fn handle_socket(mut socket: axum::extract::ws::WebSocket, state: AppState
             },
         );
 
-        let full_response = match state.ai_client.chat_completion_stream(messages).await {
+        let full_response = match state.ai_service.chat_completion_stream(messages).await {
             Ok(stream) => {
                 let mut full = String::new();
                 futures::pin_mut!(stream);
@@ -97,7 +97,7 @@ async fn handle_socket(mut socket: axum::extract::ws::WebSocket, state: AppState
             }
         };
 
-        let _ = state.chat_repo.add_chat_message("assistant", &full_response).await;
+        let _ = state.chat_service.add_message("assistant", &full_response).await;
     }
 }
 

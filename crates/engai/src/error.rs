@@ -2,6 +2,8 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde_json::json;
 
+use engai_core::error::AppError;
+
 pub struct ApiError {
     pub status: StatusCode,
     pub message: String,
@@ -22,6 +24,18 @@ impl ApiError {
     }
     pub fn internal(msg: &str) -> Self {
         Self::new(StatusCode::INTERNAL_SERVER_ERROR, msg)
+    }
+}
+
+impl From<AppError> for ApiError {
+    fn from(e: AppError) -> Self {
+        match &e {
+            AppError::NotFound(msg) => ApiError::not_found(msg),
+            AppError::ValidationError(msg) => ApiError::bad_request(msg),
+            AppError::AiError(msg) => ApiError::internal(msg),
+            AppError::Database(e) => ApiError::internal(&e.to_string()),
+            AppError::Internal(msg) => ApiError::internal(msg),
+        }
     }
 }
 

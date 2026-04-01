@@ -84,11 +84,11 @@ async fn on_panel_enter(app: &mut App, state: &AppState) {
         }
         Panel::Chat => {
             if app.chat_messages.is_empty() {
-                if let Ok(msgs) = state.chat_repo.get_recent_chat(50).await {
-                    app.chat_messages = msgs.into_iter().rev().collect();
-                } else {
-                    app.set_status("Failed to load chat history");
-                }
+            if let Ok(msgs) = state.chat_service.get_recent(50).await {
+                app.chat_messages = msgs.into_iter().rev().collect();
+            } else {
+                app.set_status("Failed to load chat history");
+            }
             }
         }
         Panel::Stats => panel_stats::load_stats(state, app).await,

@@ -45,15 +45,14 @@ async fn list_phrases(
     Query(params): Query<ListParams>,
 ) -> ApiResult<Json<Vec<engai_core::models::Phrase>>> {
     let phrases = state
-        .phrase_repo
+        .phrase_service
         .list_phrases(
             params.search.as_deref(),
             params.familiarity_gte,
             params.limit.unwrap_or(50),
             params.offset.unwrap_or(0),
         )
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+        .await?;
     Ok(Json(phrases))
 }
 
@@ -62,10 +61,9 @@ async fn create_phrase(
     Json(body): Json<CreatePhraseBody>,
 ) -> ApiResult<Json<engai_core::models::Phrase>> {
     let phrase = state
-        .phrase_repo
+        .phrase_service
         .add_phrase(&body.phrase, body.meaning.as_deref())
-        .await
-        .map_err(|e| ApiError::bad_request(&e.to_string()))?;
+        .await?;
     Ok(Json(phrase))
 }
 
@@ -73,12 +71,7 @@ async fn get_phrase(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> ApiResult<Json<engai_core::models::Phrase>> {
-    let p = state
-        .phrase_repo
-        .get_phrase_by_id(id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::not_found(&format!("phrase {} not found", id)))?;
+    let p = state.phrase_service.get_phrase_by_id(id).await?;
     Ok(Json(p))
 }
 
@@ -88,11 +81,9 @@ async fn update_phrase(
     Json(body): Json<UpdatePhraseBody>,
 ) -> ApiResult<Json<engai_core::models::Phrase>> {
     let updated = state
-        .phrase_repo
+        .phrase_service
         .update_phrase(id, body.phrase.as_deref(), body.meaning.as_deref(), body.familiarity, None, None, None)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::not_found(&format!("phrase {} not found", id)))?;
+        .await?;
     Ok(Json(updated))
 }
 
@@ -100,11 +91,7 @@ async fn delete_phrase(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    state
-        .phrase_repo
-        .delete_phrase(id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+    state.phrase_service.delete_phrase(id).await?;
     Ok(Json(json!({ "deleted": true })))
 }
 
@@ -112,16 +99,13 @@ async fn explain_phrase(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Sse<impl Stream<Item = Result<Event, axum::Error>>> {
-    let ai = state.ai_client.clone();
-    let pe = state.prompt_engine.clone();
-    let phrase_text = async move {
-        let p = state.phrase_repo.get_phrase_by_id(id).await.ok().flatten()?;
-        Some(p.phrase)
-    }
-    .await
-    .unwrap_or_else(|| format!("phrase_{}", id));
+    let phrase_text = match state.phrase_service.get_phrase_by_id(id).await {
+        Ok(p) => p.phrase,
+        Err(_) => format!("phrase_{}", id),
+    };
+    let svc = state.phrase_service.clone();
     let stream = async_stream::stream! {
-        match ai.explain_phrase(&phrase_text, &pe).await {
+        match svc.explain_phrase(&phrase_text).await {
             Ok(text) => {
                 yield Ok(Event::default().data(text));
             }
@@ -137,10 +121,6 @@ async fn get_examples(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> ApiResult<Json<Vec<engai_core::models::Example>>> {
-    let examples = state
-        .example_repo
-        .get_examples("phrase", id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+    let examples = state.phrase_service.get_examples(id).await?;
     Ok(Json(examples))
 }

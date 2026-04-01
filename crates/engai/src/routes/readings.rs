@@ -8,7 +8,7 @@ use futures::stream::Stream;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::error::{ApiError, ApiResult};
+use crate::error::ApiResult;
 use crate::state::AppState;
 
 #[derive(Deserialize)]
@@ -36,10 +36,9 @@ async fn list_readings(
     Query(params): Query<ListParams>,
 ) -> ApiResult<Json<Vec<engai_core::models::Reading>>> {
     let readings = state
-        .reading_repo
+        .reading_service
         .list_readings(params.limit.unwrap_or(50), params.offset.unwrap_or(0))
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+        .await?;
     Ok(Json(readings))
 }
 
@@ -48,10 +47,9 @@ async fn create_reading(
     Json(body): Json<CreateReadingBody>,
 ) -> ApiResult<Json<engai_core::models::Reading>> {
     let reading = state
-        .reading_repo
+        .reading_service
         .add_reading(body.title.as_deref(), &body.content, body.source.as_deref())
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+        .await?;
     Ok(Json(reading))
 }
 
@@ -59,12 +57,7 @@ async fn get_reading(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> ApiResult<Json<engai_core::models::Reading>> {
-    let reading = state
-        .reading_repo
-        .get_reading(id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::not_found(&format!("reading {} not found", id)))?;
+    let reading = state.reading_service.get_reading(id).await?;
     Ok(Json(reading))
 }
 
@@ -72,11 +65,7 @@ async fn delete_reading(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    state
-        .reading_repo
-        .delete_reading(id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+    state.reading_service.delete_reading(id).await?;
     Ok(Json(json!({ "deleted": true })))
 }
 
@@ -84,16 +73,13 @@ async fn analyze_reading(
     State(state): State<AppState>,
     Path(id): Path<i64>,
 ) -> Sse<impl Stream<Item = Result<Event, axum::Error>>> {
-    let ai = state.ai_client.clone();
-    let pe = state.prompt_engine.clone();
-    let content = async move {
-        let r = state.reading_repo.get_reading(id).await.ok().flatten()?;
-        Some(r.content)
-    }
-    .await
-    .unwrap_or_default();
+    let content = match state.reading_service.get_reading(id).await {
+        Ok(r) => r.content,
+        Err(_) => String::new(),
+    };
+    let svc = state.reading_service.clone();
     let stream = async_stream::stream! {
-        match ai.analyze_reading(&content, &pe).await {
+        match svc.analyze_reading(&content).await {
             Ok(text) => {
                 yield Ok(Event::default().data(text));
             }

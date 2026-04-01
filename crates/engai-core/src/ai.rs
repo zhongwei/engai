@@ -192,7 +192,7 @@ impl AiClient {
     pub async fn chat_completion_stream(
         &self,
         messages: Vec<ChatMessage>,
-    ) -> Result<impl futures::Stream<Item = Result<String>>> {
+    ) -> Result<std::pin::Pin<Box<dyn futures::Stream<Item = Result<String>> + Send>>> {
         let url = format!("{}/chat/completions", self.base_url.trim_end_matches('/'));
         let body = ChatRequest {
             model: self.model.clone(),

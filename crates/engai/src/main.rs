@@ -101,14 +101,14 @@ async fn run() -> anyhow::Result<()> {
             let config = engai_core::config::Config::load_global()?;
             let db_path = config.db_path();
             let db = engai_core::db::Db::new(&db_path).await?;
-            let state = crate::state::AppState::new(std::sync::Arc::new(db), config)?;
+            let state = crate::state::AppState::new(std::sync::Arc::new(db), config);
             crate::server::run_server(state, port).await?;
         }
         None => {
             let config = engai_core::config::Config::load_global()?;
             let db_path = config.db_path();
             let db = engai_core::db::Db::new(&db_path).await?;
-            let state = crate::state::AppState::new(std::sync::Arc::new(db), config.clone())?;
+            let state = crate::state::AppState::new(std::sync::Arc::new(db), config.clone());
             let tui_state = state.clone();
 
             let port = config.server.port;

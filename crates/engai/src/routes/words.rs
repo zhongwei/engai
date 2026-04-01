@@ -47,15 +47,14 @@ async fn list_words(
     Query(params): Query<ListParams>,
 ) -> ApiResult<Json<Vec<engai_core::models::Word>>> {
     let words = state
-        .word_repo
+        .word_service
         .list_words(
             params.search.as_deref(),
             params.familiarity_gte,
             params.limit.unwrap_or(50),
             params.offset.unwrap_or(0),
         )
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+        .await?;
     Ok(Json(words))
 }
 
@@ -64,10 +63,9 @@ async fn create_word(
     Json(body): Json<CreateWordBody>,
 ) -> ApiResult<Json<engai_core::models::Word>> {
     let word = state
-        .word_repo
+        .word_service
         .add_word(&body.word, body.phonetic.as_deref(), body.meaning.as_deref())
-        .await
-        .map_err(|e| ApiError::bad_request(&e.to_string()))?;
+        .await?;
     Ok(Json(word))
 }
 
@@ -75,12 +73,7 @@ async fn get_word(
     State(state): State<AppState>,
     Path(word): Path<String>,
 ) -> ApiResult<Json<engai_core::models::Word>> {
-    let w = state
-        .word_repo
-        .get_word(&word)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::not_found(&format!("word '{}' not found", word)))?;
+    let w = state.word_service.get_word(&word).await?;
     Ok(Json(w))
 }
 
@@ -89,14 +82,9 @@ async fn update_word(
     Path(word): Path<String>,
     Json(body): Json<UpdateWordBody>,
 ) -> ApiResult<Json<engai_core::models::Word>> {
-    let current = state
-        .word_repo
-        .get_word(&word)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::not_found(&format!("word '{}' not found", word)))?;
+    let current = state.word_service.get_word(&word).await?;
     let updated = state
-        .word_repo
+        .word_service
         .update_word(
             current.id,
             body.word.as_deref(),
@@ -107,9 +95,7 @@ async fn update_word(
             None,
             None,
         )
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::internal("failed to update word"))?;
+        .await?;
     Ok(Json(updated))
 }
 
@@ -117,17 +103,7 @@ async fn delete_word(
     State(state): State<AppState>,
     Path(word): Path<String>,
 ) -> ApiResult<Json<serde_json::Value>> {
-    let current = state
-        .word_repo
-        .get_word(&word)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::not_found(&format!("word '{}' not found", word)))?;
-    state
-        .word_repo
-        .delete_word(current.id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+    state.word_service.delete_word(&word).await?;
     Ok(Json(json!({ "deleted": true })))
 }
 
@@ -135,11 +111,10 @@ async fn explain_word(
     State(state): State<AppState>,
     Path(word): Path<String>,
 ) -> Sse<impl Stream<Item = Result<Event, axum::Error>>> {
-    let ai = state.ai_client.clone();
-    let pe = state.prompt_engine.clone();
+    let svc = state.word_service.clone();
     let word_clone = word.clone();
     let stream = async_stream::stream! {
-        match ai.explain_word(&word_clone, &pe).await {
+        match svc.explain_word(&word_clone).await {
             Ok(text) => {
                 yield Ok(Event::default().data(text));
             }
@@ -155,16 +130,6 @@ async fn get_examples(
     State(state): State<AppState>,
     Path(word): Path<String>,
 ) -> ApiResult<Json<Vec<engai_core::models::Example>>> {
-    let w = state
-        .word_repo
-        .get_word(&word)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?
-        .ok_or_else(|| ApiError::not_found(&format!("word '{}' not found", word)))?;
-    let examples = state
-        .example_repo
-        .get_examples("word", w.id)
-        .await
-        .map_err(|e| ApiError::internal(&e.to_string()))?;
+    let examples = state.word_service.get_examples(&word).await?;
     Ok(Json(examples))
 }
