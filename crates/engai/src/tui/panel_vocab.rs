@@ -4,12 +4,11 @@ use super::app::{App, VocabDetail, VocabTab};
 use crate::state::AppState;
 
 pub async fn load_vocab(state: &AppState, app: &mut App) {
-    let db = &state.db;
-    match db.list_words(None, None, 200, 0).await {
+    match state.word_repo.list_words(None, None, 200, 0).await {
         Ok(words) => app.words = words,
         Err(e) => app.set_status(format!("Failed to load words: {}", e)),
     }
-    match db.list_phrases(None, None, 200, 0).await {
+    match state.phrase_repo.list_phrases(None, None, 200, 0).await {
         Ok(phrases) => app.phrases = phrases,
         Err(e) => app.set_status(format!("Failed to load phrases: {}", e)),
     }

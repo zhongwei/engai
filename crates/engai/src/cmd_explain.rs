@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use engai_core::ai::AiClient;
 use engai_core::config::Config;
-use engai_core::db::Db;
+use engai_core::db::{Db, PhraseRepository, WordRepository};
 use engai_core::markdown::{MarkdownPhrase, MarkdownWord};
 use engai_core::prompt::PromptEngine;
 
@@ -15,17 +15,20 @@ pub enum ExplainTarget {
 pub async fn run(target: ExplainTarget) -> Result<()> {
     let config = Config::load_global()?;
     let db = Db::new(&config.db_path()).await?;
+    let pool = db.pool().clone();
+    let word_repo = WordRepository::new(pool.clone());
+    let phrase_repo = PhraseRepository::new(pool);
     let ai = AiClient::from_config(&config)?;
     let prompts_dir = Config::config_dir().join("prompts");
     let engine = PromptEngine::new(prompts_dir);
 
     match target {
         ExplainTarget::Word { word } => {
-            let w = db.get_word(&word).await?.ok_or_else(|| {
+            let w = word_repo.get_word(&word).await?.ok_or_else(|| {
                 anyhow::anyhow!("Word '{}' not found. Add it first with `engai add word {}`", word, word)
             })?;
             let explanation = ai.explain_word(&word, &engine).await?;
-            db.update_word(w.id, None, None, Some(&explanation), None, None, None, None)
+            word_repo.update_word(w.id, None, None, Some(&explanation), None, None, None, None)
                 .await?;
 
             let md_path = config.docs_path().join("01_vocab").join(format!("{}.md", word));
@@ -52,11 +55,11 @@ pub async fn run(target: ExplainTarget) -> Result<()> {
             println!("AI explanation for '{}' saved", word);
         }
         ExplainTarget::Phrase { phrase } => {
-            let p = db.get_phrase(&phrase).await?.ok_or_else(|| {
+            let p = phrase_repo.get_phrase(&phrase).await?.ok_or_else(|| {
                 anyhow::anyhow!("Phrase '{}' not found. Add it first with `engai add phrase {}`", phrase, phrase)
             })?;
             let explanation = ai.explain_phrase(&phrase, &engine).await?;
-            db.update_phrase(p.id, None, Some(&explanation), None, None, None, None)
+            phrase_repo.update_phrase(p.id, None, Some(&explanation), None, None, None, None)
                 .await?;
 
             let md_path = config

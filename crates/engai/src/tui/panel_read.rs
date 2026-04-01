@@ -4,7 +4,7 @@ use super::app::{App, ReadingDetail};
 use crate::state::AppState;
 
 pub async fn load_readings(state: &AppState, app: &mut App) {
-    match state.db.list_readings(100, 0).await {
+    match state.reading_repo.list_readings(100, 0).await {
         Ok(readings) => app.readings = readings,
         Err(e) => app.set_status(format!("Failed to load readings: {}", e)),
     }

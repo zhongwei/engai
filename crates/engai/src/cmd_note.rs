@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use engai_core::config::Config;
-use engai_core::db::Db;
+use engai_core::db::{Db, NoteRepository};
 
 #[derive(clap::Subcommand)]
 pub enum NoteAction {
@@ -34,7 +34,8 @@ pub async fn run(action: NoteAction) -> Result<()> {
 
             let config = Config::load_global()?;
             let db = Db::new(&config.db_path()).await?;
-            let note = db.add_note(&target_type, target_id, &note_content).await?;
+            let note_repo = NoteRepository::new(db.pool().clone());
+            let note = note_repo.add_note(&target_type, target_id, &note_content).await?;
             println!(
                 "Note added (id: {}) for {} #{}",
                 note.id, target_type, target_id

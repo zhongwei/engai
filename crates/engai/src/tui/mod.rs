@@ -84,7 +84,7 @@ async fn on_panel_enter(app: &mut App, state: &AppState) {
         }
         Panel::Chat => {
             if app.chat_messages.is_empty() {
-                if let Ok(msgs) = state.db.get_recent_chat(50).await {
+                if let Ok(msgs) = state.chat_repo.get_recent_chat(50).await {
                     app.chat_messages = msgs.into_iter().rev().collect();
                 } else {
                     app.set_status("Failed to load chat history");

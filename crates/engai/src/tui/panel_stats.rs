@@ -4,11 +4,10 @@ use super::app::{App, StatsData};
 use crate::state::AppState;
 
 pub async fn load_stats(state: &AppState, app: &mut App) {
-    let db = &state.db;
-    let word_count = db.word_count().await.unwrap_or(0);
-    let phrase_count = db.phrase_count().await.unwrap_or(0);
-    let pending = db.pending_review_count().await.unwrap_or(0);
-    let today = db.review_count_today().await.unwrap_or(0);
+    let word_count = state.word_repo.word_count().await.unwrap_or(0);
+    let phrase_count = state.phrase_repo.phrase_count().await.unwrap_or(0);
+    let pending = state.review_repo.pending_review_count().await.unwrap_or(0);
+    let today = state.review_repo.review_count_today().await.unwrap_or(0);
 
     app.stats = Some(StatsData {
         word_count,

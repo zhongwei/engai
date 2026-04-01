@@ -40,7 +40,7 @@ async fn list_notes(
     Query(params): Query<NoteQuery>,
 ) -> ApiResult<Json<Vec<engai_core::models::Note>>> {
     let notes = state
-        .db
+        .note_repo
         .get_notes(&params.target_type, params.target_id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -52,7 +52,7 @@ async fn create_note(
     Json(body): Json<CreateNoteBody>,
 ) -> ApiResult<Json<engai_core::models::Note>> {
     let note = state
-        .db
+        .note_repo
         .add_note(&body.target_type, body.target_id, &body.content)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -65,12 +65,12 @@ async fn update_note(
     Json(body): Json<UpdateNoteBody>,
 ) -> ApiResult<Json<engai_core::models::Note>> {
     state
-        .db
+        .note_repo
         .delete_note(id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
     let note = state
-        .db
+        .note_repo
         .add_note(&body.target_type, body.target_id, &body.content)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -82,7 +82,7 @@ async fn delete_note(
     Path(id): Path<i64>,
 ) -> ApiResult<Json<serde_json::Value>> {
     state
-        .db
+        .note_repo
         .delete_note(id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;

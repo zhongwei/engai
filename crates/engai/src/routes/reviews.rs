@@ -35,12 +35,12 @@ async fn today_reviews(
     State(state): State<AppState>,
 ) -> ApiResult<Json<Vec<ReviewItem>>> {
     let words = state
-        .db
+        .word_repo
         .get_today_review_words()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
     let phrases = state
-        .db
+        .phrase_repo
         .get_today_review_phrases()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -79,7 +79,7 @@ async fn submit_review(
     let (interval, ease_factor) = match target_type.as_str() {
         "word" => {
             let w = state
-                .db
+                .word_repo
                 .get_word_by_id(id)
                 .await
                 .map_err(|e| ApiError::internal(&e.to_string()))?
@@ -88,7 +88,7 @@ async fn submit_review(
         }
         "phrase" => {
             let p = state
-                .db
+                .phrase_repo
                 .get_phrase_by_id(id)
                 .await
                 .map_err(|e| ApiError::internal(&e.to_string()))?
@@ -103,7 +103,7 @@ async fn submit_review(
     match target_type.as_str() {
         "word" => {
             state
-                .db
+                .word_repo
                 .update_word(
                     id,
                     None,
@@ -119,7 +119,7 @@ async fn submit_review(
         }
         "phrase" => {
             state
-                .db
+                .phrase_repo
                 .update_phrase(
                     id,
                     None,
@@ -136,7 +136,7 @@ async fn submit_review(
     }
 
     state
-        .db
+        .review_repo
         .add_review(&target_type, id, body.quality)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -154,12 +154,12 @@ async fn review_stats(
     State(state): State<AppState>,
 ) -> ApiResult<Json<serde_json::Value>> {
     let pending = state
-        .db
+        .review_repo
         .pending_review_count()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
     let reviewed = state
-        .db
+        .review_repo
         .review_count_today()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;

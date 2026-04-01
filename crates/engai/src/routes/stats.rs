@@ -9,22 +9,22 @@ pub fn router() -> Router<AppState> {
 
 async fn get_stats(State(state): State<AppState>) -> ApiResult<Json<serde_json::Value>> {
     let word_count = state
-        .db
+        .word_repo
         .word_count()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
     let phrase_count = state
-        .db
+        .phrase_repo
         .phrase_count()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
     let pending_reviews = state
-        .db
+        .review_repo
         .pending_review_count()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
     let reviewed_today = state
-        .db
+        .review_repo
         .review_count_today()
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;

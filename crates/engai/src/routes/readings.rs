@@ -36,7 +36,7 @@ async fn list_readings(
     Query(params): Query<ListParams>,
 ) -> ApiResult<Json<Vec<engai_core::models::Reading>>> {
     let readings = state
-        .db
+        .reading_repo
         .list_readings(params.limit.unwrap_or(50), params.offset.unwrap_or(0))
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -48,7 +48,7 @@ async fn create_reading(
     Json(body): Json<CreateReadingBody>,
 ) -> ApiResult<Json<engai_core::models::Reading>> {
     let reading = state
-        .db
+        .reading_repo
         .add_reading(body.title.as_deref(), &body.content, body.source.as_deref())
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -60,7 +60,7 @@ async fn get_reading(
     Path(id): Path<i64>,
 ) -> ApiResult<Json<engai_core::models::Reading>> {
     let reading = state
-        .db
+        .reading_repo
         .get_reading(id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?
@@ -73,7 +73,7 @@ async fn delete_reading(
     Path(id): Path<i64>,
 ) -> ApiResult<Json<serde_json::Value>> {
     state
-        .db
+        .reading_repo
         .delete_reading(id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -87,7 +87,7 @@ async fn analyze_reading(
     let ai = state.ai_client.clone();
     let pe = state.prompt_engine.clone();
     let content = async move {
-        let r = state.db.get_reading(id).await.ok().flatten()?;
+        let r = state.reading_repo.get_reading(id).await.ok().flatten()?;
         Some(r.content)
     }
     .await

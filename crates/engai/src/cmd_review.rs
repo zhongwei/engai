@@ -3,16 +3,20 @@ use std::io::{self, Write};
 use anyhow::Result;
 
 use engai_core::config::Config;
-use engai_core::db::Db;
+use engai_core::db::{Db, PhraseRepository, ReviewRepository, WordRepository};
 use engai_core::review::calculate_next_review;
 
 pub async fn run(show_all: bool) -> Result<()> {
     let config = Config::load_global()?;
     let db = Db::new(&config.db_path()).await?;
+    let pool = db.pool().clone();
+    let word_repo = WordRepository::new(pool.clone());
+    let phrase_repo = PhraseRepository::new(pool.clone());
+    let review_repo = ReviewRepository::new(pool);
 
     if show_all {
-        let words = db.list_words(None, None, 1000, 0).await?;
-        let phrases = db.list_phrases(None, None, 1000, 0).await?;
+        let words = word_repo.list_words(None, None, 1000, 0).await?;
+        let phrases = phrase_repo.list_phrases(None, None, 1000, 0).await?;
 
         println!("=== Words ({}) ===", words.len());
         for w in &words {
@@ -43,8 +47,8 @@ pub async fn run(show_all: bool) -> Result<()> {
         return Ok(());
     }
 
-    let words = db.get_today_review_words().await?;
-    let phrases = db.get_today_review_phrases().await?;
+    let words = word_repo.get_today_review_words().await?;
+    let phrases = phrase_repo.get_today_review_phrases().await?;
 
     let total = words.len() + phrases.len();
     if total == 0 {
@@ -67,7 +71,7 @@ pub async fn run(show_all: bool) -> Result<()> {
         let quality = quality.clamp(0, 5);
 
         let result = calculate_next_review(quality, w.interval, w.ease_factor);
-        db.update_word(
+        word_repo.update_word(
             w.id,
             None,
             None,
@@ -78,7 +82,7 @@ pub async fn run(show_all: bool) -> Result<()> {
             Some(result.ease_factor),
         )
         .await?;
-        db.add_review("word", w.id, quality).await?;
+        review_repo.add_review("word", w.id, quality).await?;
     }
 
     for p in &phrases {
@@ -94,7 +98,7 @@ pub async fn run(show_all: bool) -> Result<()> {
         let quality = quality.clamp(0, 5);
 
         let result = calculate_next_review(quality, p.interval, p.ease_factor);
-        db.update_phrase(
+        phrase_repo.update_phrase(
             p.id,
             None,
             None,
@@ -104,7 +108,7 @@ pub async fn run(show_all: bool) -> Result<()> {
             Some(result.ease_factor),
         )
         .await?;
-        db.add_review("phrase", p.id, quality).await?;
+        review_repo.add_review("phrase", p.id, quality).await?;
     }
 
     println!("\nReview complete! {} items reviewed.", total);

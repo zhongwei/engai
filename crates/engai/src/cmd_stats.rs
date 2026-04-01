@@ -1,16 +1,20 @@
 use anyhow::Result;
 
 use engai_core::config::Config;
-use engai_core::db::Db;
+use engai_core::db::{Db, PhraseRepository, ReviewRepository, WordRepository};
 
 pub async fn run() -> Result<()> {
     let config = Config::load_global()?;
     let db = Db::new(&config.db_path()).await?;
+    let pool = db.pool().clone();
+    let word_repo = WordRepository::new(pool.clone());
+    let phrase_repo = PhraseRepository::new(pool.clone());
+    let review_repo = ReviewRepository::new(pool);
 
-    let word_count = db.word_count().await?;
-    let phrase_count = db.phrase_count().await?;
-    let reviewed_today = db.review_count_today().await?;
-    let pending = db.pending_review_count().await?;
+    let word_count = word_repo.word_count().await?;
+    let phrase_count = phrase_repo.phrase_count().await?;
+    let reviewed_today = review_repo.review_count_today().await?;
+    let pending = review_repo.pending_review_count().await?;
 
     println!("engai stats");
     println!("  Words:        {}", word_count);

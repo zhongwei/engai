@@ -45,7 +45,7 @@ async fn list_phrases(
     Query(params): Query<ListParams>,
 ) -> ApiResult<Json<Vec<engai_core::models::Phrase>>> {
     let phrases = state
-        .db
+        .phrase_repo
         .list_phrases(
             params.search.as_deref(),
             params.familiarity_gte,
@@ -62,7 +62,7 @@ async fn create_phrase(
     Json(body): Json<CreatePhraseBody>,
 ) -> ApiResult<Json<engai_core::models::Phrase>> {
     let phrase = state
-        .db
+        .phrase_repo
         .add_phrase(&body.phrase, body.meaning.as_deref())
         .await
         .map_err(|e| ApiError::bad_request(&e.to_string()))?;
@@ -74,7 +74,7 @@ async fn get_phrase(
     Path(id): Path<i64>,
 ) -> ApiResult<Json<engai_core::models::Phrase>> {
     let p = state
-        .db
+        .phrase_repo
         .get_phrase_by_id(id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?
@@ -88,7 +88,7 @@ async fn update_phrase(
     Json(body): Json<UpdatePhraseBody>,
 ) -> ApiResult<Json<engai_core::models::Phrase>> {
     let updated = state
-        .db
+        .phrase_repo
         .update_phrase(id, body.phrase.as_deref(), body.meaning.as_deref(), body.familiarity, None, None, None)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?
@@ -101,7 +101,7 @@ async fn delete_phrase(
     Path(id): Path<i64>,
 ) -> ApiResult<Json<serde_json::Value>> {
     state
-        .db
+        .phrase_repo
         .delete_phrase(id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;
@@ -115,7 +115,7 @@ async fn explain_phrase(
     let ai = state.ai_client.clone();
     let pe = state.prompt_engine.clone();
     let phrase_text = async move {
-        let p = state.db.get_phrase_by_id(id).await.ok().flatten()?;
+        let p = state.phrase_repo.get_phrase_by_id(id).await.ok().flatten()?;
         Some(p.phrase)
     }
     .await
@@ -138,7 +138,7 @@ async fn get_examples(
     Path(id): Path<i64>,
 ) -> ApiResult<Json<Vec<engai_core::models::Example>>> {
     let examples = state
-        .db
+        .example_repo
         .get_examples("phrase", id)
         .await
         .map_err(|e| ApiError::internal(&e.to_string()))?;

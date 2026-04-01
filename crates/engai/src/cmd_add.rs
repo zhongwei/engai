@@ -1,7 +1,7 @@
 use anyhow::Result;
 
 use engai_core::config::Config;
-use engai_core::db::Db;
+use engai_core::db::{Db, PhraseRepository, WordRepository};
 use engai_core::markdown::{MarkdownPhrase, MarkdownWord};
 
 #[derive(clap::Subcommand)]
@@ -13,15 +13,18 @@ pub enum AddTarget {
 pub async fn run(target: AddTarget) -> Result<()> {
     let config = Config::load_global()?;
     let db = Db::new(&config.db_path()).await?;
+    let pool = db.pool().clone();
+    let word_repo = WordRepository::new(pool.clone());
+    let phrase_repo = PhraseRepository::new(pool);
 
     match target {
         AddTarget::Word { word } => {
-            let w = db.get_word(&word).await?;
+            let w = word_repo.get_word(&word).await?;
             if w.is_some() {
                 println!("Word '{}' already exists", word);
                 return Ok(());
             }
-            db.add_word(&word, None, None).await?;
+            word_repo.add_word(&word, None, None).await?;
             let md = MarkdownWord {
                 word: word.clone(),
                 phonetic: None,
@@ -40,12 +43,12 @@ pub async fn run(target: AddTarget) -> Result<()> {
             println!("Added word: {}", word);
         }
         AddTarget::Phrase { phrase } => {
-            let p = db.get_phrase(&phrase).await?;
+            let p = phrase_repo.get_phrase(&phrase).await?;
             if p.is_some() {
                 println!("Phrase '{}' already exists", phrase);
                 return Ok(());
             }
-            db.add_phrase(&phrase, None).await?;
+            phrase_repo.add_phrase(&phrase, None).await?;
             let md = MarkdownPhrase {
                 phrase: phrase.clone(),
                 familiarity: 0,

@@ -6,10 +6,9 @@ use engai_core::review::calculate_next_review;
 
 pub async fn load_review(state: &AppState, app: &mut App) {
     app.review_loading = true;
-    let db = &state.db;
 
-    let words = db.get_today_review_words().await.unwrap_or_default();
-    let phrases = db.get_today_review_phrases().await.unwrap_or_default();
+    let words = state.word_repo.get_today_review_words().await.unwrap_or_default();
+    let phrases = state.phrase_repo.get_today_review_phrases().await.unwrap_or_default();
 
     let mut items: Vec<ReviewItem> = words
         .into_iter()
@@ -80,14 +79,15 @@ async fn submit_review(app: &mut App, state: &AppState, quality: i32) {
     let result =
         calculate_next_review(quality, item.interval, item.ease_factor);
 
-    let db = &state.db;
-    let _ = db
+    let _ = state
+        .review_repo
         .add_review(&item.target_type, item.id, quality)
         .await;
 
     match item.target_type.as_str() {
         "word" => {
-            let _ = db
+            let _ = state
+                .word_repo
                 .update_word(
                     item.id,
                     None,
@@ -101,7 +101,8 @@ async fn submit_review(app: &mut App, state: &AppState, quality: i32) {
                 .await;
         }
         "phrase" => {
-            let _ = db
+            let _ = state
+                .phrase_repo
                 .update_phrase(
                     item.id,
                     None,

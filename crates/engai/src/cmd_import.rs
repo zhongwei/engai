@@ -3,12 +3,15 @@ use std::path::Path;
 use anyhow::Result;
 
 use engai_core::config::Config;
-use engai_core::db::Db;
+use engai_core::db::{Db, PhraseRepository, WordRepository};
 use engai_core::markdown::{MarkdownPhrase, MarkdownWord};
 
 pub async fn run(path: &str) -> Result<()> {
     let config = Config::load_global()?;
     let db = Db::new(&config.db_path()).await?;
+    let pool = db.pool().clone();
+    let word_repo = WordRepository::new(pool.clone());
+    let phrase_repo = PhraseRepository::new(pool);
     let path = Path::new(path);
 
     if !path.exists() {
@@ -16,15 +19,19 @@ pub async fn run(path: &str) -> Result<()> {
     }
 
     if path.is_dir() {
-        import_dir(&db, path).await?;
+        import_dir(&word_repo, &phrase_repo, path).await?;
     } else {
-        import_file(&db, path).await?;
+        import_file(&word_repo, &phrase_repo, path).await?;
     }
 
     Ok(())
 }
 
-fn import_dir<'a>(db: &'a Db, dir: &'a Path) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + 'a>> {
+fn import_dir<'a>(
+    word_repo: &'a WordRepository,
+    phrase_repo: &'a PhraseRepository,
+    dir: &'a Path,
+) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<()>> + Send + 'a>> {
     Box::pin(async move {
         let mut count = 0;
         let entries: Vec<_> = std::fs::read_dir(dir)?.collect();
@@ -32,9 +39,9 @@ fn import_dir<'a>(db: &'a Db, dir: &'a Path) -> std::pin::Pin<Box<dyn std::futur
             let entry = entry?;
             let path = entry.path();
             if path.is_dir() {
-                import_dir(db, &path).await?;
+                import_dir(word_repo, phrase_repo, &path).await?;
             } else if path.extension().and_then(|e| e.to_str()) == Some("md") {
-                import_file(db, &path).await?;
+                import_file(word_repo, phrase_repo, &path).await?;
                 count += 1;
             }
         }
@@ -45,7 +52,7 @@ fn import_dir<'a>(db: &'a Db, dir: &'a Path) -> std::pin::Pin<Box<dyn std::futur
     })
 }
 
-async fn import_file(db: &Db, path: &Path) -> Result<()> {
+async fn import_file(word_repo: &WordRepository, phrase_repo: &PhraseRepository, path: &Path) -> Result<()> {
     let parent = path.parent().unwrap_or(Path::new(""));
     let parent_name = parent
         .file_name()
@@ -57,10 +64,10 @@ async fn import_file(db: &Db, path: &Path) -> Result<()> {
     match parent_name {
         "01_vocab" => {
             let md = MarkdownWord::parse(&content)?;
-            let existing = db.get_word(&md.word).await?;
+            let existing = word_repo.get_word(&md.word).await?;
             if let Some(w) = existing {
                 let meaning = md.meaning.as_deref().or(w.meaning.as_deref());
-                db.update_word(
+                word_repo.update_word(
                     w.id,
                     None,
                     md.phonetic.as_deref(),
@@ -72,17 +79,17 @@ async fn import_file(db: &Db, path: &Path) -> Result<()> {
                 )
                 .await?;
             } else {
-                db.add_word(&md.word, md.phonetic.as_deref(), md.meaning.as_deref())
+                word_repo.add_word(&md.word, md.phonetic.as_deref(), md.meaning.as_deref())
                     .await?;
             }
             println!("Imported word: {}", md.word);
         }
         "02_phrases" => {
             let md = MarkdownPhrase::parse(&content)?;
-            let existing = db.get_phrase(&md.phrase).await?;
+            let existing = phrase_repo.get_phrase(&md.phrase).await?;
             if let Some(p) = existing {
                 let meaning = md.meaning.as_deref().or(p.meaning.as_deref());
-                db.update_phrase(
+                phrase_repo.update_phrase(
                     p.id,
                     None,
                     meaning,
@@ -93,7 +100,7 @@ async fn import_file(db: &Db, path: &Path) -> Result<()> {
                 )
                 .await?;
             } else {
-                db.add_phrase(&md.phrase, md.meaning.as_deref()).await?;
+                phrase_repo.add_phrase(&md.phrase, md.meaning.as_deref()).await?;
             }
             println!("Imported phrase: {}", md.phrase);
         }
