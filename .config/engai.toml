@@ -1,0 +1,52 @@
+# EngAI Configuration
+#
+# Default model: Uses "provider/model" format
+# Example: model = "bailian-coding-plan/qwen3-max"
+
+model = "bailian-coding-plan/qwen3-max"
+
+# Provider: zhipuai-coding-plan (智谱AI Coding Plan)
+# Set ZHIPUAI_API_KEY environment variable
+[provider.zhipuai-coding-plan]
+options = { base_url = "https://open.bigmodel.cn/api/coding/paas/v4", env = "ZHIPUAI_API_KEY" }
+
+[provider.zhipuai-coding-plan.models]
+"glm-5.1" = { limit = { context = 200000, output = 32768 }, thinking = { type = "enabled", budget_tokens = 16000 } }
+"glm-4.7" = { limit = { context = 200000, output = 32768 }, thinking = { type = "enabled", budget_tokens = 16000 } }
+
+# Provider: bailian-coding-plan (阿里云百炼 Model Studio)
+# Set BAILIAN_API_KEY environment variable
+[provider.bailian-coding-plan]
+options = { base_url = "https://coding.dashscope.aliyuncs.com/apps/anthropic/v1", env = "BAILIAN_API_KEY" }
+
+[provider.bailian-coding-plan.models]
+"qwen3-max" = { name = "Qwen3 Max" }
+"qwen3-coder-plus" = { name = "Qwen3 Coder Plus" }
+"kimi-k2.5" = { name = "Kimi K2.5", modalities = { input = ["text", "image"], output = ["text"] }, thinking = { type = "enabled", budget_tokens = 1024 } }
+
+# Provider: kimi (Moonshot AI)
+# Set KIMI_API_KEY environment variable
+[provider.kimi]
+options = { base_url = "https://api.moonshot.cn/v1", env = "KIMI_API_KEY" }
+
+[provider.kimi.models]
+"moonshot-v1-8k" = { name = "Moonshot V1 8K", limit = { context = 8192, output = 4096 } }
+"moonshot-v1-32k" = { name = "Moonshot V1 32K", limit = { context = 32768, output = 4096 } }
+"moonshot-v1-128k" = { name = "Moonshot V1 128K", limit = { context = 131072, output = 4096 } }
+
+# Server configuration
+[server]
+port = 3000
+host = "127.0.0.1"
+
+# Learning configuration
+[learning]
+daily_new_words = 20
+daily_review_limit = 100
+default_deck = "01_vocab"
+
+# Storage configuration
+[storage]
+db_path = "~/.engai/engai.db"
+docs_path = "./docs"
+prompts_path = "./prompts"
