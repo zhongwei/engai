@@ -22,29 +22,34 @@ pub async fn run(file: &str) -> Result<()> {
 
     let reading = reading_repo.add_reading(Some(title), &content, source.as_deref()).await?;
 
-    let api_key = config.resolve_api_key();
-    let summary = if !api_key.is_empty() {
-        let ai = match crate::ai::AiClient::from_config(&config) {
-            Ok(client) => Some(client),
-            Err(_) => {
-                println!("Warning: Could not create AI client, skipping analysis");
-                None
-            }
-        };
+    let resolved = config.resolve_model();
+    let api_key = resolved.as_ref().ok().and_then(|r| r.api_key.clone());
+    let summary = if let Some(ref key) = api_key {
+        if !key.is_empty() {
+            let ai = match crate::ai::AiClient::from_config(&config) {
+                Ok(client) => Some(client),
+                Err(_) => {
+                    println!("Warning: Could not create AI client, skipping analysis");
+                    None
+                }
+            };
 
-        match ai {
-            Some(ai) => {
-                let prompts_dir = Config::config_dir().join("prompts");
-                let engine = crate::prompt::PromptEngine::new(prompts_dir);
-                match ai.analyze_reading(&content, &engine).await {
-                    Ok(result) => Some(result),
-                    Err(e) => {
-                        println!("Warning: AI analysis failed: {}", e);
-                        None
+            match ai {
+                Some(ai) => {
+                    let prompts_dir = Config::config_dir().join("prompts");
+                    let engine = crate::prompt::PromptEngine::new(prompts_dir);
+                    match ai.analyze_reading(&content, &engine).await {
+                        Ok(result) => Some(result),
+                        Err(e) => {
+                            println!("Warning: AI analysis failed: {}", e);
+                            None
+                        }
                     }
                 }
+                None => None,
             }
-            None => None,
+        } else {
+            None
         }
     } else {
         None

@@ -7,6 +7,7 @@ pub enum ConfigAction {
     Init,
     Set { key: String, value: String },
     Get { key: String },
+    List,
 }
 
 pub async fn run(action: ConfigAction) -> Result<()> {
@@ -37,6 +38,25 @@ pub async fn run(action: ConfigAction) -> Result<()> {
             let value = get_config_value(&config, &key);
             println!("{} = {}", key, value);
         }
+        ConfigAction::List => {
+            let config = Config::load_global()?;
+            println!("model = {}", config.model);
+            println!("\n[server]");
+            println!("port = {}", config.server.port);
+            println!("host = {}", config.server.host);
+            println!("\n[learning]");
+            println!("daily_new_words = {}", config.learning.daily_new_words);
+            println!("daily_review_limit = {}", config.learning.daily_review_limit);
+            println!("default_deck = {}", config.learning.default_deck);
+            println!("\n[storage]");
+            println!("db_path = {}", config.storage.db_path);
+            println!("docs_path = {}", config.storage.docs_path);
+            println!("prompts_path = {}", config.storage.prompts_path);
+            println!("\n[providers]");
+            for (name, provider) in &config.provider {
+                println!("  {} ({} models)", name, provider.models.len());
+            }
+        }
     }
 
     Ok(())
@@ -45,12 +65,9 @@ pub async fn run(action: ConfigAction) -> Result<()> {
 fn set_config_value(config: &mut Config, key: &str, value: &str) -> Result<()> {
     let parts: Vec<&str> = key.split('.').collect();
     match parts.as_slice() {
+        ["model"] => config.model = value.to_string(),
         ["server", "port"] => config.server.port = value.parse()?,
         ["server", "host"] => config.server.host = value.to_string(),
-        ["ai", "provider"] => config.ai.provider = value.to_string(),
-        ["ai", "api_key"] => config.ai.api_key = value.to_string(),
-        ["ai", "model"] => config.ai.model = value.to_string(),
-        ["ai", "base_url"] => config.ai.base_url = value.to_string(),
         ["learning", "daily_new_words"] => config.learning.daily_new_words = value.parse()?,
         ["learning", "daily_review_limit"] => config.learning.daily_review_limit = value.parse()?,
         ["learning", "default_deck"] => config.learning.default_deck = value.to_string(),
@@ -64,23 +81,9 @@ fn set_config_value(config: &mut Config, key: &str, value: &str) -> Result<()> {
 fn get_config_value(config: &Config, key: &str) -> String {
     let parts: Vec<&str> = key.split('.').collect();
     match parts.as_slice() {
+        ["model"] => config.model.clone(),
         ["server", "port"] => config.server.port.to_string(),
         ["server", "host"] => config.server.host.clone(),
-        ["ai", "provider"] => config.ai.provider.clone(),
-        ["ai", "api_key"] => {
-            if config.ai.api_key.is_empty() {
-                "(not set)".to_string()
-            } else {
-                let len = config.ai.api_key.len();
-                if len > 8 {
-                    format!("{}...{}", &config.ai.api_key[..4], &config.ai.api_key[len - 4..])
-                } else {
-                    "***".to_string()
-                }
-            }
-        }
-        ["ai", "model"] => config.ai.model.clone(),
-        ["ai", "base_url"] => config.ai.base_url.clone(),
         ["learning", "daily_new_words"] => config.learning.daily_new_words.to_string(),
         ["learning", "daily_review_limit"] => config.learning.daily_review_limit.to_string(),
         ["learning", "default_deck"] => config.learning.default_deck.clone(),
