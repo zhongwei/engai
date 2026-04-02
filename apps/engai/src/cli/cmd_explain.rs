@@ -21,7 +21,7 @@ pub async fn run(target: ExplainTarget) -> Result<()> {
 
     match target {
         ExplainTarget::Word { word } => {
-            let w = state.word_service.get_word(&word).await.map_err(|e| {
+            let w = state.word_service.get_word(&word).await.map_err(|_e| {
                 anyhow::anyhow!("Word '{}' not found. Add it first with `engai add word {}`", word, word)
             })?;
             let explanation = state.word_service.explain_word(&word).await?;

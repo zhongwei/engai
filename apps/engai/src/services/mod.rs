@@ -8,7 +8,7 @@ pub mod stats_service;
 pub mod sync_service;
 pub mod word_service;
 
-pub use ai_service::{AiService, ChatStream};
+pub use ai_service::AiService;
 pub use chat_service::ChatService;
 pub use note_service::NoteService;
 pub use phrase_service::PhraseService;

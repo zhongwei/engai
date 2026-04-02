@@ -82,10 +82,12 @@ impl PhraseService {
         Ok(self.example_repo.get_examples("phrase", id).await?)
     }
 
+    #[allow(dead_code)]
     pub async fn get_today_review_phrases(&self) -> Result<Vec<Phrase>> {
         Ok(self.phrase_repo.get_today_review_phrases().await?)
     }
 
+    #[allow(dead_code)]
     pub async fn phrase_count(&self) -> Result<i64> {
         Ok(self.phrase_repo.phrase_count().await?)
     }

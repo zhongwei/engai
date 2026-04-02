@@ -30,6 +30,7 @@ impl Db {
         Ok(Self { pool })
     }
 
+    #[allow(dead_code)]
     pub async fn new_in_memory() -> Result<Self> {
         let pool = SqlitePoolOptions::new()
             .max_connections(1)

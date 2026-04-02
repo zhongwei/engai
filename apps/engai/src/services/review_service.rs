@@ -84,7 +84,7 @@ impl ReviewService {
         id: i64,
         quality: i32,
     ) -> Result<ReviewResult> {
-        if quality < 0 || quality > 5 {
+        if !(0..=5).contains(&quality) {
             return Err(AppError::ValidationError(
                 "quality must be between 0 and 5".into(),
             ));

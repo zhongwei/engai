@@ -4,10 +4,10 @@ use crate::services::{
     AiService, ChatService, NoteService, PhraseService, ReadingService, ReviewService, Services,
     StatsService, SyncService, WordService,
 };
-use std::path::Path;
 use std::sync::Arc;
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct AppState {
     pub db: Arc<Db>,
     pub config: Config,
@@ -46,6 +46,7 @@ impl AppState {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_services(db: Arc<Db>, config: Config, services: Services, ai: AiService) -> Self {
         let sync_service =
             SyncService::new(db.clone(), &config.docs_path(), &config.prompts_path());

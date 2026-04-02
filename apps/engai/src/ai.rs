@@ -3,7 +3,7 @@ use futures::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::config::{Config, ResolvedModel};
+use crate::config::Config;
 use crate::prompt::PromptEngine;
 
 #[derive(Debug, Clone)]

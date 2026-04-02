@@ -44,6 +44,7 @@ impl ExampleRepository {
         Ok(rows)
     }
 
+    #[allow(dead_code)]
     pub async fn delete_examples(&self, target_type: &str, target_id: i64) -> Result<u64> {
         let result = sqlx::query("DELETE FROM examples WHERE target_type = ? AND target_id = ?")
             .bind(target_type)

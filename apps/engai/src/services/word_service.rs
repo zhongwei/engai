@@ -57,6 +57,7 @@ impl WordService {
             .ok_or_else(|| AppError::NotFound(format!("word '{}' not found", word)))
     }
 
+    #[allow(dead_code)]
     pub async fn get_word_by_id(&self, id: i64) -> Result<Word> {
         self.word_repo
             .get_word_by_id(id)
@@ -97,10 +98,12 @@ impl WordService {
         Ok(self.example_repo.get_examples("word", w.id).await?)
     }
 
+    #[allow(dead_code)]
     pub async fn get_today_review_words(&self) -> Result<Vec<Word>> {
         Ok(self.word_repo.get_today_review_words().await?)
     }
 
+    #[allow(dead_code)]
     pub async fn word_count(&self) -> Result<i64> {
         Ok(self.word_repo.word_count().await?)
     }

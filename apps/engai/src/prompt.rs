@@ -23,6 +23,7 @@ impl PromptEngine {
         Ok(rendered)
     }
 
+    #[allow(dead_code)]
     pub async fn load_raw(&self, template_name: &str) -> Result<String> {
         let path = self.prompts_dir.join(template_name);
         tokio::fs::read_to_string(&path)

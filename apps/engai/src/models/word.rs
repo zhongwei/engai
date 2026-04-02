@@ -16,6 +16,7 @@ pub struct Word {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct NewWord {
     pub word: String,
     pub phonetic: Option<String>,

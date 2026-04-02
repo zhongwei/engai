@@ -4,7 +4,6 @@ use axum::{
     Json, Router,
 };
 use serde::Deserialize;
-use serde_json::json;
 
 use crate::error::ApiResult;
 use crate::state::AppState;

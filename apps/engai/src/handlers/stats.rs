@@ -1,5 +1,4 @@
 use axum::{extract::State, routing::get, Json, Router};
-use axum::response::IntoResponse;
 
 use crate::error::ApiError;
 use crate::state::AppState;

@@ -8,7 +8,7 @@ use futures::stream::Stream;
 use serde::Deserialize;
 use serde_json::json;
 
-use crate::error::{ApiError, ApiResult};
+use crate::error::ApiResult;
 use crate::state::AppState;
 
 #[derive(Deserialize)]

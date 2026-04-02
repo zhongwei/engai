@@ -16,6 +16,7 @@ pub struct AiService {
 }
 
 impl AiService {
+    #[allow(dead_code)]
     pub fn new(client: Option<Arc<AiClient>>, prompt_engine: Arc<PromptEngine>) -> Self {
         Self {
             client,

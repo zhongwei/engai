@@ -4,6 +4,7 @@ use crate::models::ChatEntry;
 use crate::services::AiService;
 
 #[derive(Clone)]
+#[allow(dead_code)]
 pub struct ChatService {
     chat_repo: ChatRepository,
     ai: AiService,
@@ -22,6 +23,7 @@ impl ChatService {
         Ok(self.chat_repo.get_recent_chat(limit).await?)
     }
 
+    #[allow(dead_code)]
     pub async fn send_message(&self, content: &str) -> Result<String> {
         self.chat_repo.add_chat_message("user", content).await?;
 
@@ -57,6 +59,7 @@ impl ChatService {
         Ok(response)
     }
 
+    #[allow(dead_code)]
     pub async fn clear(&self) -> Result<()> {
         self.chat_repo.clear_chat().await?;
         Ok(())

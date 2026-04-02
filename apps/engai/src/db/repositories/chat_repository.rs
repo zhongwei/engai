@@ -35,6 +35,7 @@ impl ChatRepository {
         Ok(rows)
     }
 
+    #[allow(dead_code)]
     pub async fn clear_chat(&self) -> Result<u64> {
         let result = sqlx::query("DELETE FROM chat_history")
             .execute(&self.pool)

@@ -15,6 +15,7 @@ pub struct Phrase {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct NewPhrase {
     pub phrase: String,
     pub meaning: Option<String>,

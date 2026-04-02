@@ -1,12 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct Pagination {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct WordQuery {
     pub search: Option<String>,
     pub familiarity: Option<i32>,
@@ -14,6 +16,7 @@ pub struct WordQuery {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct PhraseQuery {
     pub search: Option<String>,
     pub familiarity: Option<i32>,
@@ -21,6 +24,7 @@ pub struct PhraseQuery {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)]
 pub struct NoteQuery {
     pub target_type: Option<String>,
     pub target_id: Option<i64>,

@@ -11,7 +11,6 @@ pub use chat::*;
 pub use example::*;
 pub use note::*;
 pub use phrase::*;
-pub use query::*;
 pub use reading::*;
 pub use review::*;
 pub use word::*;

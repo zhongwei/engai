@@ -131,6 +131,7 @@ impl Default for StorageConfig {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ResolvedModel {
     pub provider_name: String,
     pub model_id: String,
@@ -139,6 +140,7 @@ pub struct ResolvedModel {
     pub config: ModelConfig,
 }
 
+#[allow(dead_code)]
 impl ResolvedModel {
     pub fn context_limit(&self) -> u32 {
         self.config
