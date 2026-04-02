@@ -124,7 +124,7 @@ impl Default for StorageConfig {
     fn default() -> Self {
         Self {
             db_path: "~/.engai/engai.db".to_string(),
-            docs_path: "./docs".to_string(),
+            docs_path: "./learning".to_string(),
             prompts_path: "./prompts".to_string(),
         }
     }

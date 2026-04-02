@@ -48,5 +48,5 @@ default_deck = "01_vocab"
 # Storage configuration
 [storage]
 db_path = "~/.engai/engai.db"
-docs_path = "./docs"
+docs_path = "./learning"
 prompts_path = "./prompts"
