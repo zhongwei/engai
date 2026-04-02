@@ -20,7 +20,7 @@ use std::io;
 use std::time::Duration;
 
 use crate::api::ApiClient;
-use app::{App, Panel};
+use app::{App, FocusZone, Panel};
 
 pub async fn run(client: ApiClient) -> Result<()> {
     enable_raw_mode()?;
@@ -113,6 +113,46 @@ async fn handle_key(app: &mut App, client: &ApiClient, code: KeyCode, modifiers:
             app.reading_detail = None;
             return;
         }
+        app.focus = FocusZone::Sidebar;
+        return;
+    }
+
+    if code == KeyCode::Tab {
+        if app.panel == Panel::Vocab && app.focus == FocusZone::Content && app.vocab_detail.is_none() {
+            panel_vocab::handle_tab(app);
+        } else {
+            app.focus = match app.focus {
+                FocusZone::Sidebar => FocusZone::Content,
+                FocusZone::Content => FocusZone::Sidebar,
+            };
+        }
+        return;
+    }
+
+    if app.focus == FocusZone::Sidebar {
+        match code {
+            KeyCode::Up | KeyCode::Char('k') => {
+                app.panel = app.panel.prev();
+                on_panel_enter(app, client).await;
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                app.panel = app.panel.next();
+                on_panel_enter(app, client).await;
+            }
+            KeyCode::Left | KeyCode::Char('[') => {
+                app.panel = app.panel.prev();
+                on_panel_enter(app, client).await;
+            }
+            KeyCode::Right | KeyCode::Char(']') => {
+                app.panel = app.panel.next();
+                on_panel_enter(app, client).await;
+            }
+            KeyCode::Enter => {
+                app.focus = FocusZone::Content;
+            }
+            _ => {}
+        }
+        return;
     }
 
     match app.panel {
@@ -121,25 +161,5 @@ async fn handle_key(app: &mut App, client: &ApiClient, code: KeyCode, modifiers:
         Panel::Read => panel_read::handle_key(app, client, code).await,
         Panel::Chat => panel_chat::handle_key(app, client, code).await,
         Panel::Stats => panel_stats::handle_key(app, client, code).await,
-    }
-
-    if app.panel != Panel::Chat || app.chat_input.is_empty()
-    {
-        match code {
-            KeyCode::Char('[') | KeyCode::Left => {
-                app.panel = app.panel.prev();
-                on_panel_enter(app, client).await;
-            }
-            KeyCode::Char(']') | KeyCode::Right => {
-                app.panel = app.panel.next();
-                on_panel_enter(app, client).await;
-            }
-            KeyCode::Tab => {
-                if app.panel == Panel::Vocab && app.vocab_detail.is_none() {
-                    panel_vocab::handle_tab(app);
-                }
-            }
-            _ => {}
-        }
     }
 }

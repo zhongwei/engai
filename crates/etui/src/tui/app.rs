@@ -41,6 +41,7 @@ impl Panel {
 
 pub struct App {
     pub panel: Panel,
+    pub focus: FocusZone,
     pub should_quit: bool,
 
     pub words: Vec<Word>,
@@ -67,6 +68,12 @@ pub struct App {
 
     pub status_message: Option<String>,
     pub status_message_time: Option<std::time::Instant>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FocusZone {
+    Sidebar,
+    Content,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -110,6 +117,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             panel: Panel::Vocab,
+            focus: FocusZone::Sidebar,
             should_quit: false,
             words: Vec::new(),
             phrases: Vec::new(),

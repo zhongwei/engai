@@ -6,7 +6,7 @@ use ratatui::{
     Frame,
 };
 
-use super::app::{App, Panel, VocabDetail, VocabTab};
+use super::app::{App, FocusZone, Panel, VocabDetail, VocabTab};
 
 const SIDEBAR_WIDTH: u16 = 18;
 const TITLE_HEIGHT: u16 = 1;
@@ -58,39 +58,56 @@ fn render_title(f: &mut Frame, area: Rect) {
 }
 
 fn render_sidebar(f: &mut Frame, area: Rect, app: &App) {
+    let focused = app.focus == FocusZone::Sidebar;
+    let border_style = if focused {
+        Style::default().fg(Color::Cyan)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
     let items: Vec<ListItem> = Panel::ALL
         .iter()
         .map(|&panel| {
             let label = panel.label();
             let selected = app.panel == panel;
-            let style = if selected {
+            let style = if selected && focused {
                 Style::default()
                     .fg(Color::Black)
                     .bg(Color::Cyan)
                     .add_modifier(Modifier::BOLD)
+            } else if selected {
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD)
             } else {
                 Style::default().fg(Color::Gray)
             };
-            ListItem::new(Span::styled(format!(" {} ", label), style))
+            let prefix = if selected && focused { ">" } else { " " };
+            ListItem::new(Span::styled(format!(" {}{}", prefix, label), style))
         })
         .collect();
 
-    let list = List::new(items).block(Block::default().borders(Borders::RIGHT).title(" Menu "));
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::RIGHT)
+            .border_style(border_style),
+    );
     f.render_widget(list, area);
 }
 
 fn render_status(f: &mut Frame, area: Rect, app: &App) {
     let msg = if let Some(ref status) = app.status_message {
         status.clone()
+    } else if app.focus == FocusZone::Sidebar {
+        "[Up/Down/j/k] Nav [Tab/Enter] Focus content [q] Quit".to_string()
     } else {
         match app.panel {
             Panel::Vocab => {
-                "[Up/Down] Scroll [Enter] Detail [Tab] Switch [[/]] Nav [q] Quit".to_string()
+                "[Up/Down] Scroll [Enter] Detail [Tab] Switch [Esc] Sidebar [q] Quit".to_string()
             }
-            Panel::Review => "[Space] Flip [0-5] Rate [n] Skip [q] Quit".to_string(),
-            Panel::Read => "[Up/Down] Scroll [Enter] Detail [q] Quit".to_string(),
-            Panel::Chat => "[Enter] Send [q] Quit".to_string(),
-            Panel::Stats => "[r] Refresh [q] Quit".to_string(),
+            Panel::Review => "[Space] Flip [0-5] Rate [n] Skip [Esc] Sidebar [q] Quit".to_string(),
+            Panel::Read => "[Up/Down] Scroll [Enter] Detail [Esc] Sidebar [q] Quit".to_string(),
+            Panel::Chat => "[Enter] Send [Esc] Sidebar [q] Quit".to_string(),
+            Panel::Stats => "[r] Refresh [Esc] Sidebar [q] Quit".to_string(),
         }
     };
     let status = Paragraph::new(Span::styled(
