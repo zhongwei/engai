@@ -48,9 +48,8 @@ impl AiClient {
             .clone()
             .unwrap_or_else(|| "https://api.openai.com/v1".to_string());
         
-        let api_key = resolved
-            .api_key
-            .ok_or_else(|| anyhow::anyhow!("API key required for provider '{}'", resolved.provider_name))?;
+        // Safe: resolve_model() errors if api_key is None
+        let api_key = resolved.api_key.unwrap();
 
         let client = Client::new();
 
