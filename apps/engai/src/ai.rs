@@ -3,7 +3,7 @@ use futures::StreamExt;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::config::Config;
+use crate::config::{Config, ResolvedModel};
 use crate::prompt::PromptEngine;
 
 #[derive(Debug, Clone)]
@@ -20,20 +20,6 @@ pub struct AiClient {
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
-}
-
-trait IfEmpty {
-    fn if_empty(self, default: Self) -> Self;
-}
-
-impl IfEmpty for String {
-    fn if_empty(self, default: Self) -> Self {
-        if self.is_empty() {
-            default
-        } else {
-            self
-        }
-    }
 }
 
 #[derive(Debug, Serialize)]
@@ -55,28 +41,24 @@ struct ChatChoice {
 
 impl AiClient {
     pub fn from_config(config: &Config) -> Result<Self> {
-        let api_key = config.resolve_api_key();
-        if api_key.is_empty() {
-            anyhow::bail!("AI API key is required. Set ai.api_key in config or ENGAI_AI_API_KEY env var.");
-        }
-
-        let provider = config.ai.provider.clone();
-        let base_url = config.ai.base_url.clone().if_empty(match provider.as_str() {
-            "kimi" => "https://api.moonshot.cn/v1".to_string(),
-            _ => "https://api.openai.com/v1".to_string(),
-        });
-        let model = config.ai.model.clone().if_empty(match provider.as_str() {
-            "kimi" => "moonshot-v1-8k".to_string(),
-            _ => "gpt-4o-mini".to_string(),
-        });
+        let resolved = config.resolve_model()?;
+        
+        let base_url = resolved
+            .base_url
+            .clone()
+            .unwrap_or_else(|| "https://api.openai.com/v1".to_string());
+        
+        let api_key = resolved
+            .api_key
+            .ok_or_else(|| anyhow::anyhow!("API key required for provider '{}'", resolved.provider_name))?;
 
         let client = Client::new();
 
         Ok(Self {
             client,
-            provider,
+            provider: resolved.provider_name,
             api_key,
-            model,
+            model: resolved.model_id,
             base_url,
         })
     }
