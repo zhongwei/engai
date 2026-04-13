@@ -1,13 +1,73 @@
-use axum::{response::IntoResponse, routing::get, Router};
-use rust_embed::Embed;
+#[cfg(embed_static)]
+use axum::http::Uri;
+use axum::{body::Body, http::header, response::Response, routing::get, Router};
 use tower_http::cors::{Any, CorsLayer};
+
+#[cfg(embed_static)]
+use rust_embed::Embed;
 
 use crate::handlers::{chat, notes, phrases, readings, reviews, stats, sync, words};
 use crate::state::AppState;
 
+#[cfg(embed_static)]
 #[derive(Embed)]
 #[folder = "static"]
-struct Assets;
+struct StaticAssets;
+
+#[cfg(embed_static)]
+fn serve_static(path: &str) -> Response {
+    let br_path = format!("{}.br", path);
+
+    if let Some(content) = StaticAssets::get(&br_path) {
+        let mime = mime_guess::from_path(path).first_or_octet_stream();
+        return Response::builder()
+            .header(header::CONTENT_TYPE, mime.as_ref())
+            .header(header::CONTENT_ENCODING, "br")
+            .header(header::CACHE_CONTROL, "public, max-age=31536000, immutable")
+            .body(Body::from(content.data))
+            .unwrap();
+    }
+
+    match StaticAssets::get(path) {
+        Some(content) => {
+            let mime = mime_guess::from_path(path).first_or_octet_stream();
+            Response::builder()
+                .header(header::CONTENT_TYPE, mime.as_ref())
+                .body(Body::from(content.data))
+                .unwrap()
+        }
+        None => Response::builder()
+            .status(404)
+            .body(Body::from("Not Found"))
+            .unwrap(),
+    }
+}
+
+#[cfg(embed_static)]
+async fn static_handler(uri: Uri) -> Response {
+    let path = uri.path().trim_start_matches('/');
+
+    if path.is_empty() || !path.contains('.') {
+        return serve_static("index.html");
+    }
+
+    let response = serve_static(path);
+    if response.status() == axum::http::StatusCode::NOT_FOUND {
+        serve_static("index.html")
+    } else {
+        response
+    }
+}
+
+#[cfg(not(embed_static))]
+async fn dev_mode_fallback() -> Response {
+    Response::builder()
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(
+            r#"{"message":"Running in dev mode. Start frontend with: cd web && bun run dev"}"#,
+        ))
+        .unwrap()
+}
 
 pub async fn run_server(state: AppState, port: u16) -> anyhow::Result<()> {
     let addr = format!("{}:{}", state.config.server.host, port);
@@ -32,38 +92,20 @@ fn create_app(state: AppState) -> Router {
         .nest("/chat", chat::router())
         .nest("/sync", sync::router())
         .nest("/stats", stats::router());
-    let app = Router::new()
+    let mut app = Router::new()
         .nest("/api", api)
-        .fallback_service(get(serve_static));
-    app.with_state(state).layer(cors)
-}
+        .with_state(state)
+        .layer(cors);
 
-async fn serve_static(
-    axum::extract::Path(path): axum::extract::Path<String>,
-) -> impl axum::response::IntoResponse {
-    let path = if path.is_empty() {
-        "index.html".to_string()
-    } else {
-        path
-    };
-    if let Some(content) = Assets::get(&path) {
-        let mime = mime_guess::from_path(&path).first_or_octet_stream();
-        axum::response::Response::builder()
-            .header("Content-Type", mime.as_ref())
-            .body(axum::body::Body::from(content.data.to_vec()))
-            .unwrap()
-            .into_response()
-    } else if let Some(content) = Assets::get("index.html") {
-        axum::response::Response::builder()
-            .header("Content-Type", "text/html")
-            .body(axum::body::Body::from(content.data.to_vec()))
-            .unwrap()
-            .into_response()
-    } else {
-        axum::response::Response::builder()
-            .status(404)
-            .body(axum::body::Body::from("Not found"))
-            .unwrap()
-            .into_response()
+    #[cfg(embed_static)]
+    {
+        app = app.fallback(static_handler);
     }
+
+    #[cfg(not(embed_static))]
+    {
+        app = app.fallback(dev_mode_fallback);
+    }
+
+    app
 }
