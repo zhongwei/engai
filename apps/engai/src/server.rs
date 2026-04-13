@@ -1,6 +1,6 @@
 #[cfg(embed_static)]
 use axum::http::Uri;
-use axum::{body::Body, http::header, response::Response, routing::get, Router};
+use axum::{body::Body, http::header, response::Response, Router};
 use tower_http::cors::{Any, CorsLayer};
 
 #[cfg(embed_static)]
