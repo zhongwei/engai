@@ -3,7 +3,7 @@ import { brotliCompressSync } from 'zlib'
 import { createHash } from 'crypto'
 import { join, basename as pathBasename } from 'path'
 
-const outDir = '../apps/engai/static'
+const outDir = '../apps/eai/static'
 const assetsDir = join(outDir, 'assets')
 
 const manifest: Record<string, string> = {}

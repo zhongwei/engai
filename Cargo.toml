@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["apps/engai", "crates/etui", "crates/esync"]
+members = ["apps/eai", "crates/etui", "crates/esync"]
 
 [workspace.dependencies]
 tokio = { version = "1.50.0", features = ["full"] }
