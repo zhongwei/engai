@@ -51,7 +51,7 @@ async fn run_app(
     loop {
         terminal.draw(|f| ui::render(f, &app))?;
 
-        match event::poll_event(tick_rate) {
+        match event::poll_event_async(tick_rate).await {
             Some(event::AppEvent::Key(code, modifiers)) => {
                 handle_key(&mut app, &client, code, modifiers).await;
             }

@@ -34,6 +34,16 @@ mod sync_db_adapter;
 
 use clap::Parser;
 
+#[cfg(embed_static)]
+fn default_server_port() -> u16 {
+    3000
+}
+
+#[cfg(not(embed_static))]
+fn default_server_port() -> u16 {
+    9000
+}
+
 #[derive(Parser)]
 #[command(name = "engai", about = "AI English Learning System")]
 struct Cli {
@@ -81,7 +91,7 @@ enum Commands {
     },
     #[command(alias = "-s")]
     Server {
-        #[arg(short, long, default_value_t = 3000)]
+        #[arg(short, long, default_value_t = default_server_port())]
         port: u16,
     },
 }
@@ -128,7 +138,11 @@ async fn run() -> anyhow::Result<()> {
             let db = crate::db::Db::new(&db_path).await?;
             let state = crate::state::AppState::new(std::sync::Arc::new(db), config.clone());
 
+            #[cfg(embed_static)]
             let port = config.server.port;
+            #[cfg(not(embed_static))]
+            let port = default_server_port();
+
             let server_url = format!("http://127.0.0.1:{}", port);
             
             let server_handle = tokio::spawn(async move {

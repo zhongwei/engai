@@ -72,8 +72,19 @@ async fn dev_mode_fallback() -> Response {
 pub async fn run_server(state: AppState, port: u16) -> anyhow::Result<()> {
     let addr = format!("{}:{}", state.config.server.host, port);
     let app = create_app(state);
+
+    let listener = tokio::net::TcpListener::bind(&addr).await.map_err(|e| {
+        if e.kind() == std::io::ErrorKind::AddrInUse {
+            anyhow::anyhow!(
+                "Port {} is already in use. Try a different port with --port <PORT>",
+                port
+            )
+        } else {
+            anyhow::anyhow!("Failed to bind to {}: {}", addr, e)
+        }
+    })?;
+
     tracing::info!("Engai server running on http://{}", addr);
-    let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
     Ok(())
 }
